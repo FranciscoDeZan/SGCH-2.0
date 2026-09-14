@@ -49,7 +49,10 @@ public class Cliente {
     
     @Column(columnDefinition = "DECIMAL(11,8)")
     private Double longitud;
-    private String calificacion;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "calificacion", length = 10)
+    private CalificacionCliente calificacion;
     private String tipoHacienda;
     private String formasPagoPreferidas;
     

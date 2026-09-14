@@ -1,6 +1,7 @@
 package com.sgch.service;
 
 import com.sgch.exception.ResourceNotFoundException;
+import com.sgch.model.CalificacionCliente;
 import com.sgch.model.Cliente;
 import com.sgch.repository.ClienteRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -108,7 +109,7 @@ public class ClienteServiceTest {
         updatedData.setDireccion("Nueva Direccion 123");
         updatedData.setLatitud(-32.95);
         updatedData.setLongitud(-60.65);
-        updatedData.setCalificacion("A");
+        updatedData.setCalificacion(CalificacionCliente.A);
         updatedData.setTipoHacienda("Invernada");
         updatedData.setFormasPagoPreferidas("Cheque 30 dias");
         updatedData.setObservaciones("Cliente destacado");
@@ -121,7 +122,7 @@ public class ClienteServiceTest {
         assertThat(result.getDireccion()).isEqualTo("Nueva Direccion 123");
         assertThat(result.getLatitud()).isEqualTo(-32.95);
         assertThat(result.getLongitud()).isEqualTo(-60.65);
-        assertThat(result.getCalificacion()).isEqualTo("A");
+        assertThat(result.getCalificacion()).isEqualTo(CalificacionCliente.A);
         assertThat(result.getTipoHacienda()).isEqualTo("Invernada");
         assertThat(result.getFormasPagoPreferidas()).isEqualTo("Cheque 30 dias");
         assertThat(result.getObservaciones()).isEqualTo("Cliente destacado");

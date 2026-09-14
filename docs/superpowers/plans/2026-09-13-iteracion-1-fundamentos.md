@@ -30,7 +30,7 @@
 - Create: `backend/src/main/resources/application.yml`
 - Create: `backend/src/main/java/com/sgch/SgchApplication.java`
 
-- [ ] **Step 1: Crear config de infraestructura**
+- [x] **Step 1: Crear config de infraestructura**
 ```gitignore
 # .gitignore
 backend/target/
@@ -77,7 +77,7 @@ DB_USER=root
 DB_PASSWORD=root
 ```
 
-- [ ] **Step 2: Crear pom.xml**
+- [x] **Step 2: Crear pom.xml**
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -111,7 +111,7 @@ DB_PASSWORD=root
 </project>
 ```
 
-- [ ] **Step 3: Crear application.yml**
+- [x] **Step 3: Crear application.yml**
 ```yaml
 spring:
   datasource:
@@ -129,7 +129,7 @@ server:
   port: 8080
 ```
 
-- [ ] **Step 4: Crear Main class y verificar compilación**
+- [x] **Step 4: Crear Main class y verificar compilación**
 ```java
 package com.sgch;
 import org.springframework.boot.SpringApplication;
@@ -143,7 +143,7 @@ public class SgchApplication {
 }
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add .gitignore docker-compose.yml README.md .env.example backend/pom.xml backend/src
 git commit -m "chore: scaffold infra, testcontainers and spring boot"
@@ -159,7 +159,7 @@ git commit -m "chore: scaffold infra, testcontainers and spring boot"
 - Create: `backend/src/main/java/com/sgch/repository/ClienteRepository.java`
 - Create: `backend/src/test/java/com/sgch/repository/ClienteRepositoryTest.java`
 
-- [ ] **Step 1: Crear migración Flyway**
+- [x] **Step 1: Crear migración Flyway**
 ```sql
 CREATE TABLE clientes (
     id VARCHAR(36) PRIMARY KEY,
@@ -178,7 +178,7 @@ CREATE TABLE clientes (
 );
 ```
 
-- [ ] **Step 2: Crear Entidad y Repositorio**
+- [x] **Step 2: Crear Entidad y Repositorio**
 ```java
 // Cliente.java
 package com.sgch.model;
@@ -224,7 +224,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ClienteRepository extends JpaRepository<Cliente, String> {}
 ```
 
-- [ ] **Step 3: Test de Integración (Verifica UUID y Constraint UNIQUE)**
+- [x] **Step 3: Test de Integración (Verifica UUID y Constraint UNIQUE)**
 ```java
 package com.sgch.repository;
 import com.sgch.model.Cliente;
@@ -289,7 +289,7 @@ public class ClienteRepositoryTest {
 }
 ```
 
-- [ ] **Step 4: Ejecutar test y Commit**
+- [x] **Step 4: Ejecutar test y Commit**
 Run: `cd backend && mvn test -Dtest=ClienteRepositoryTest`
 Expected: PASS
 ```bash
@@ -309,7 +309,7 @@ git commit -m "feat: add cliente entity, flyway migration and jpa testcontainers
 - Create: `backend/src/main/java/com/sgch/exception/GlobalExceptionHandler.java`
 - Create: `backend/src/main/java/com/sgch/config/WebConfig.java`
 
-- [ ] **Step 1: Crear Test Fallido de Controller verificando ProblemDetail**
+- [x] **Step 1: Crear Test Fallido de Controller verificando ProblemDetail**
 ```java
 package com.sgch.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -372,7 +372,7 @@ public class ClienteControllerTest {
 }
 ```
 
-- [ ] **Step 2: Implementar Service (con validación, readOnly y transacciones correctas) y Controller**
+- [x] **Step 2: Implementar Service (con validación, readOnly y transacciones correctas) y Controller**
 ```java
 // ResourceNotFoundException.java
 package com.sgch.exception;
@@ -467,7 +467,7 @@ public class ClienteController {
 }
 ```
 
-- [ ] **Step 3: Implementar GlobalExceptionHandler (RFC 7807) y CORS**
+- [x] **Step 3: Implementar GlobalExceptionHandler (RFC 7807) y CORS**
 ```java
 // GlobalExceptionHandler.java
 package com.sgch.exception;
@@ -517,11 +517,11 @@ public class WebConfig implements WebMvcConfigurer {
 }
 ```
 
-- [ ] **Step 4: Ejecutar test de controller**
+- [x] **Step 4: Ejecutar test de controller**
 Run: `cd backend && mvn test -Dtest=ClienteControllerTest`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add backend/src/test backend/src/main/java/com/sgch/controller backend/src/main/java/com/sgch/service backend/src/main/java/com/sgch/exception backend/src/main/java/com/sgch/config
 git commit -m "feat: complete cliente CRUD with RFC7807 ProblemDetail, robust update and Transactional"
@@ -531,16 +531,16 @@ git commit -m "feat: complete cliente CRUD with RFC7807 ProblemDetail, robust up
 
 ### Task 4: Scaffolding Frontend (Vite + Tailwind v3 + Vitest)
 
-- [ ] **Step 1: Crear app Vite React TS**
+- [x] **Step 1: Crear app Vite React TS**
 Run: `npm create vite@latest frontend -- --template react-ts`
 
-- [ ] **Step 2: Instalar dependencias**
+- [x] **Step 2: Instalar dependencias**
 Run: `cd frontend && npm install && npm install tailwindcss@^3 postcss autoprefixer axios && npx tailwindcss init -p`
 
-- [ ] **Step 3: Instalar dependencias de test (Vitest + RTL)**
+- [x] **Step 3: Instalar dependencias de test (Vitest + RTL)**
 Run: `cd frontend && npm install -D vitest jsdom @testing-library/react @testing-library/jest-dom`
 
-- [ ] **Step 4: Configurar Tailwind, Package.json y Vitest**
+- [x] **Step 4: Configurar Tailwind, Package.json y Vitest**
 Update `frontend/vite.config.ts`:
 ```typescript
 import { defineConfig } from 'vitest/config'
@@ -572,7 +572,7 @@ Update `frontend/src/index.css`:
 @tailwind utilities;
 ```
 
-- [ ] **Step 5: Crear un Smoke Test básico**
+- [x] **Step 5: Crear un Smoke Test básico**
 Create `frontend/src/App.test.tsx`:
 ```tsx
 import { render, screen } from '@testing-library/react'
@@ -584,11 +584,11 @@ test('renders app successfully', () => {
 })
 ```
 
-- [ ] **Step 6: Verificar build y test**
+- [x] **Step 6: Verificar build y test**
 Run: `cd frontend && npm run build && npm run test`
 Expected: Successfully compiled & tests pass.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 ```bash
 git add frontend/
 git commit -m "chore: scaffold vite react ts frontend with tailwind v3 and vitest"
