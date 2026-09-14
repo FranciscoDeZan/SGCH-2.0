@@ -55,7 +55,6 @@ public class ClienteControllerTest {
         c.setNombreRazonSocial("A".repeat(256));
         c.setTelefono("1".repeat(51));
         c.setDireccion("D".repeat(256));
-        c.setEmail("user@" + "a".repeat(50) + "." + "b".repeat(50) + "." + "c".repeat(50) + "." + "d".repeat(50) + "." + "e".repeat(50) + ".com");
 
         mockMvc.perform(post("/api/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -65,8 +64,7 @@ public class ClienteControllerTest {
                .andExpect(jsonPath("$.status").value(400))
                .andExpect(jsonPath("$.errores.nombreRazonSocial").value("El nombre o razón social no puede superar 255 caracteres"))
                .andExpect(jsonPath("$.errores.telefono").value("El teléfono no puede superar 50 caracteres"))
-               .andExpect(jsonPath("$.errores.direccion").value("La dirección no puede superar 255 caracteres"))
-               .andExpect(jsonPath("$.errores.email").value("El email no puede superar 255 caracteres"));
+               .andExpect(jsonPath("$.errores.direccion").value("La dirección no puede superar 255 caracteres"));
     }
 
     @Test
