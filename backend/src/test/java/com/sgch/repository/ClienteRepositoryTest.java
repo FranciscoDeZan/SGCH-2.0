@@ -3,15 +3,15 @@ package com.sgch.repository;
 import com.sgch.model.Cliente;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.DockerClientFactory;
-import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.mysql.MySQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Optional;
 
@@ -19,41 +19,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DataJpaTest
+@Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(FlywayAutoConfiguration.class)
 public class ClienteRepositoryTest {
 
-    static MySQLContainer<?> mysql;
-
-    static {
-        try {
-            if (DockerClientFactory.instance().isDockerAvailable()) {
-                mysql = new MySQLContainer<>("mysql:8.0");
-                mysql.start();
-            }
-        } catch (Throwable ignored) {
-            mysql = null;
-        }
-    }
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        if (mysql != null && mysql.isRunning()) {
-            registry.add("spring.datasource.url", mysql::getJdbcUrl);
-            registry.add("spring.datasource.username", mysql::getUsername);
-            registry.add("spring.datasource.password", mysql::getPassword);
-            registry.add("spring.datasource.driver-class-name", mysql::getDriverClassName);
-        } else {
-            String h2Url = "jdbc:h2:mem:sgch_db;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1";
-            registry.add("spring.datasource.url", () -> h2Url);
-            registry.add("spring.datasource.username", () -> "sa");
-            registry.add("spring.datasource.password", () -> "");
-            registry.add("spring.datasource.driver-class-name", () -> "org.h2.Driver");
-            registry.add("spring.flyway.url", () -> h2Url);
-            registry.add("spring.flyway.user", () -> "sa");
-            registry.add("spring.flyway.password", () -> "");
-        }
-    }
+    @Container
+    @ServiceConnection
+    static MySQLContainer mysql = new MySQLContainer("mysql:8.0");
 
     @Autowired
     private ClienteRepository repository;
