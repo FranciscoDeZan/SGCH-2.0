@@ -49,3 +49,6 @@ Verificacion:
 - Backend inicio con exito (Tomcat en puerto 8080 en 3.6s).
 - Flyway aplico exitosamente la migracion V1__Create_clientes_table.sql (version 1).
 - Smoke test HTTP GET /api/clientes devolvio HTTP 200 con cuerpo [].
+
+[2026-09-14 14:55 -03:00]
+Ruling 6: Docker Desktop operativo. ClienteRepositoryTest corre con Testcontainers y @ServiceConnection contra MySQL 8.0 en contenedor. 21/21 tests pasando. Step 2 (migracion a Boot 4.1.1) cerrado.

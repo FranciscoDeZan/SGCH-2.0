@@ -2,18 +2,18 @@
 
 ## Metadata
 - **Fecha de generación:** 2026-09-14 13:05 -03:00
-- **Última actualización:** 2026-09-14 13:58 -03:00
+- **Última actualización:** 2026-09-14 14:58 -03:00
 - **Rama:** `feat/migracion-spring-boot-4`
-- **Commits incluidos (hash corto):** Base `f8bd36e` (`chore: upgrade spring boot from 3.4.3 to 3.5.9, fix email length test`). Cambios de migración en working tree pendientes de commit.
-- **Estado:** En curso (backend compilando con 0 warnings, 18/18 tests unitarios y de slice web pasando, servidor iniciando y verificado contra MySQL local con Flyway; 3 tests de integración bloqueados por entorno Docker). Consolidación de rulings en RULINGS.md completada.
+- **Commits incluidos (hash corto):** Base `f8bd36e`, consolidado `87346f8` (`chore(migration): upgrade to Spring Boot 4.1.1 with modular starters`).
+- **Estado:** Completado. 21/21 tests pasando.
 
 ## Resumen ejecutivo (máx 10 líneas)
 Se realizó la migración del backend de SGCH 2.0 desde Spring Boot 3.5.9 a Spring Boot 4.1.1 con arquitectura modular, Jackson 3 y Testcontainers BOM 2.0.5.
 El código compila sin errores ni warnings (`clean test-compile` OK).
 Se eliminó la dependencia de H2 adoptando fallo duro exclusivo con Testcontainers en repositorios.
-Los tests de servicio (9/9) y controlador (9/9) pasan exitosamente.
+Los tests de servicio (9/9), controlador (9/9) y repositorio de integración con Testcontainers MySQL 8.0 (3/3) pasan exitosamente (21/21 tests pasando).
 El servidor arranca limpiamente en Tomcat (puerto 8080 en 3.6s), Flyway ejecuta la migración V1 sobre MySQL 8.0 nativo y el endpoint `GET /api/clientes` responde HTTP 200 con `[]`.
-Queda pendiente la ejecución de los 3 tests de `ClienteRepositoryTest` que requieren Docker Desktop activo.
+Docker Desktop se encuentra operativo en Windows 11 ejecutando los contenedores de integración.
 
 ## Contexto inicial
 Spring Boot 3.x alcanzó su fin de soporte de código abierto (OSS EOL) en junio de 2026.
@@ -141,22 +141,18 @@ Para el detalle completo de justificaciones técnicas, causa raíz y notas de au
 - **Evaluación:** Solución limpia y alineada con buenas prácticas de seguridad.
 
 ## Problemas NO resueltos (deuda técnica)
-- **Docker Desktop ausente en el host:** `ClienteRepositoryTest` requiere un demonio Docker para instanciar el contenedor de MySQL 8.0 vía `@Testcontainers` y `@ServiceConnection`. Al no haber Docker disponible en el entorno local, este test falla con error de conexión al Docker daemon. Se decidió expresamente no reactivar el fallback a H2 para evitar falsos positivos de integración.
 - **Parametrización de perfiles Spring:** `application.yml` cuenta con defaults locales y sobreescritura por variables de entorno, pero se recomienda estructurar perfiles formales (`application-local.yml`, `application-prod.yml`) en fases posteriores.
 
 ## Métricas
-- **Tests unitarios y de slice web pasando:** 18 / 18 ejecutables (ClienteServiceTest: 9/9, ClienteControllerTest: 9/9).
-- **Tests de repositorio pendientes de entorno Docker:** 3 / 21 (ClienteRepositoryTest).
+- **Tests totales pasando:** 21 / 21 tests de backend (ClienteServiceTest: 9/9, ClienteControllerTest: 9/9, ClienteRepositoryTest: 3/3).
 - **Tests de frontend:** 1 / 1 pasando (Vitest smoke test).
 - **Warnings de compilación:** 0 (`clean test-compile` OK).
-- **Archivos modificados:** 4 archivos (`backend/pom.xml`, `application.yml`, `ClienteControllerTest.java`, `ClienteRepositoryTest.java`).
-- **Líneas netas cambiadas:** +92 / -58 según `git diff HEAD --shortstat`.
+- **Archivos modificados:** 4 archivos de código/config (`backend/pom.xml`, `application.yml`, `ClienteControllerTest.java`, `ClienteRepositoryTest.java`) y documentación en `.superpowers/`.
+- **Líneas netas cambiadas en código:** +92 / -58 según `git diff HEAD~1..HEAD --shortstat`.
 
 ## Próximos pasos sugeridos
-1. Iniciar Docker Desktop o proveer un entorno Docker remoto para ejecutar y dar por aprobados los 3 tests de integración de `ClienteRepositoryTest`.
-2. Consolidar los cambios actuales en un commit de git en la rama `feat/migracion-spring-boot-4`.
-3. Proceder al desarrollo de la interfaz de usuario completa para Clientes en el frontend (formulario, tabla, validaciones).
-4. Avanzar a la Iteración 2 del proyecto (diseño de DTOs, versionado de API bajo `/api/v1/`, modelo tributario y gestión de cobranzas).
+1. Proceder al desarrollo de la interfaz de usuario completa para Clientes en el frontend (formulario, tabla, validaciones).
+2. Avanzar a la Iteración 2 del proyecto (diseño de DTOs, versionado de API bajo `/api/v1/`, modelo tributario y gestión de cobranzas).
 
 ## Anexos
 

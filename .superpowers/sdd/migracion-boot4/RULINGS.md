@@ -34,11 +34,12 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 | **R-009** | progress.md | Ruling 4 | TC 2.x `MySQLContainer` paquete `org.testcontainers.mysql` sin `<>` | Aplicado |
 | **R-010** | progress.md | Ruling 5 (p. 1) | Usuario de BD dedicado `sgch`; root fuera del repo | Aplicado |
 | **R-011** | progress.md | Ruling 5 (p. 2) | Defaults de datasource en `application.yml` con `${VAR:default}` | Aplicado |
-| **R-012** | Auditor | — | Entorno dev Opción D (híbrida): MySQL nativo + Docker para tests | Parcial |
+| **R-012** | Auditor | — | Entorno dev Opción D (híbrida): MySQL nativo + Docker para tests | Aplicado |
 | **R-013** | Auditor | — | `REPORT.md` como artifact de auditoría ejecutiva | Aplicado |
 | **R-014** | Auditor | — | Incluir `.superpowers/sdd/` en el repositorio git | Aplicado |
 | **R-015** | Auditor | — | Consolidar rulings en `RULINGS.md` canónico | Aplicado |
 | **R-016** | Auditor | — | Usar skills de Superpowers para consolidación documental | Aplicado |
+| **R-017** | progress.md / Test | Ruling 6 | Cierre de Step 2: 21/21 tests pasando, Docker operativo | Aplicado |
 
 ---
 
@@ -124,7 +125,7 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 ### R-012: Entorno de desarrollo híbrido (Opción D)
 - **Qué:** Entorno de desarrollo Opción D (híbrida): MySQL nativo para arrancar el backend en dev + Docker Desktop para correr ClienteRepositoryTest con Testcontainers.
 - **Por qué:** Dos necesidades distintas, dos herramientas distintas.
-- **Estado:** Parcial (MySQL OK, Docker pendiente).
+- **Estado:** Aplicado.
 - **Ref:** Auditor externo (chat)
 
 ### R-013: REPORT.md como artifact de auditoría ejecutiva
@@ -151,6 +152,12 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 - **Estado:** Aplicado.
 - **Ref:** Auditor externo (chat)
 
+### R-017: Cierre de Step 2 (migración a Spring Boot 4.1.1)
+- **Qué:** Step 2 (migración Boot 4) cerrado. 21/21 tests pasando, BUILD SUCCESS sin warnings, Docker operativo.
+- **Por qué:** Con Docker Desktop activo, ClienteRepositoryTest corre con Testcontainers y @ServiceConnection contra MySQL 8.0 en contenedor. Se verifica el 100% de la suite de pruebas del proyecto sin fallas ni warnings.
+- **Estado:** Aplicado.
+- **Ref:** progress.md (Ruling 6)
+
 ---
 
 ## Notas de Auditoría (Observaciones)
@@ -171,3 +178,4 @@ El agente respetó 7+ checkpoints consecutivos durante la migración (repo Steps
 | Fecha | Autor / Agente | Tipo de Cambio | Descripción |
 |---|---|---|---|
 | 2026-09-14 | Antigravity + Usuario | Creación inicial | Consolidación canónica de R-001..R-016 y NA-001..NA-003 a partir de `progress.md` y auditoría externa. |
+| 2026-09-14 | Antigravity + Usuario | Actualización | Incorporación de R-017 y actualización de R-012 tras verificación de Docker Desktop y 21/21 tests pasando. |
