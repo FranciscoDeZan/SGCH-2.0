@@ -12,6 +12,17 @@ describe('ClientesPage', () => {
     vi.clearAllMocks();
   });
 
+  it('calls apiFetch("/clientes") only once on initial render of ClientesPage', async () => {
+    vi.mocked(client.apiFetch).mockResolvedValue([]);
+
+    render(<ClientesPage initialVista="lista" />);
+
+    await waitFor(() => {
+      expect(client.apiFetch).toHaveBeenCalledTimes(1);
+    });
+    expect(client.apiFetch).toHaveBeenCalledWith('/clientes');
+  });
+
   it('renders defensive message and allows returning to list when vista is detalle but selectedCliente is null', async () => {
     vi.mocked(client.apiFetch).mockResolvedValue([]);
     render(<ClientesPage initialVista="detalle" initialSelectedCliente={null} />);
@@ -57,7 +68,12 @@ describe('ClientesPage', () => {
       direccion: 'Ruta 33 Km 50',
     };
 
-    vi.mocked(client.apiFetch).mockResolvedValueOnce(nuevo);
+    vi.mocked(client.apiFetch).mockImplementation(async (_url, options) => {
+      if (options?.method === 'POST') {
+        return nuevo;
+      }
+      return [];
+    });
 
     render(<ClientesPage initialVista="alta" />);
 
@@ -81,7 +97,7 @@ describe('ClientesPage', () => {
   });
 
   it('navigates from lista to alta when clicking "Dar de alta"', async () => {
-    vi.mocked(client.apiFetch).mockResolvedValueOnce([]);
+    vi.mocked(client.apiFetch).mockResolvedValue([]);
 
     render(<ClientesPage initialVista="lista" />);
 

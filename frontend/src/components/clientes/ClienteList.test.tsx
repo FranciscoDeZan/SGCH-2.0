@@ -1,26 +1,22 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ClienteList } from './ClienteList';
-import * as client from '../../api/client';
 import type { Cliente } from '../../types/cliente';
-
-vi.mock('../../api/client', () => ({
-  apiFetch: vi.fn(),
-}));
 
 describe('ClienteList', () => {
   const mockOnSelectCliente = vi.fn();
   const mockOnNuevoCliente = vi.fn();
+  const mockOnRefetch = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('shows loading state initially with spinner and loading message', () => {
-    vi.mocked(client.apiFetch).mockReturnValue(new Promise(() => {}));
-
     render(
       <ClienteList
+        clientes={[]}
+        loading={true}
         onSelectCliente={mockOnSelectCliente}
         onNuevoCliente={mockOnNuevoCliente}
       />
@@ -29,18 +25,18 @@ describe('ClienteList', () => {
     expect(screen.getByText('Cargando clientes...')).toBeInTheDocument();
   });
 
-  it('shows empty state when no clients are returned', async () => {
-    vi.mocked(client.apiFetch).mockResolvedValueOnce([]);
-
+  it('shows empty state when no clients are returned', () => {
     render(
       <ClienteList
+        clientes={[]}
+        loading={false}
         onSelectCliente={mockOnSelectCliente}
         onNuevoCliente={mockOnNuevoCliente}
       />
     );
 
     expect(
-      await screen.findByText("No hay clientes todavía. Tocá 'Dar de alta' para agregar el primero.")
+      screen.getByText("No hay clientes todavía. Tocá 'Dar de alta' para agregar el primero.")
     ).toBeInTheDocument();
 
     const altaButton = screen.getByRole('button', { name: /dar de alta/i });
@@ -49,7 +45,7 @@ describe('ClienteList', () => {
     expect(mockOnNuevoCliente).toHaveBeenCalledTimes(1);
   });
 
-  it('shows data state with client list and allows selection and creating new client', async () => {
+  it('shows data state with client list and allows selection and creating new client', () => {
     const mockClientes: Cliente[] = [
       {
         id: '1',
@@ -65,16 +61,16 @@ describe('ClienteList', () => {
       },
     ];
 
-    vi.mocked(client.apiFetch).mockResolvedValueOnce(mockClientes);
-
     render(
       <ClienteList
+        clientes={mockClientes}
+        loading={false}
         onSelectCliente={mockOnSelectCliente}
         onNuevoCliente={mockOnNuevoCliente}
       />
     );
 
-    expect(await screen.findByText('Estancia La Ilusión')).toBeInTheDocument();
+    expect(screen.getByText('Estancia La Ilusión')).toBeInTheDocument();
     expect(screen.getByText('3415551234')).toBeInTheDocument();
     expect(screen.getByText('Ruta 11 Km 50')).toBeInTheDocument();
 
@@ -92,48 +88,41 @@ describe('ClienteList', () => {
     expect(mockOnNuevoCliente).toHaveBeenCalledTimes(1);
   });
 
-  it('shows error state when apiFetch fails', async () => {
-    vi.mocked(client.apiFetch).mockRejectedValueOnce(new Error('Network error'));
-
+  it('shows error state when error is true', () => {
     render(
       <ClienteList
+        clientes={[]}
+        loading={false}
+        error={true}
         onSelectCliente={mockOnSelectCliente}
         onNuevoCliente={mockOnNuevoCliente}
       />
     );
 
     expect(
-      await screen.findByText('No se pudo conectar. Revisá tu conexión a internet.')
+      screen.getByText('No se pudo conectar. Revisá tu conexión a internet.')
     ).toBeInTheDocument();
   });
 
-  it('re-fetches clients when clicking Reintentar in error state', async () => {
-    vi.mocked(client.apiFetch)
-      .mockRejectedValueOnce(new Error('Network error'))
-      .mockResolvedValueOnce([
-        {
-          id: '1',
-          nombreRazonSocial: 'Estancia La Paz',
-          telefono: '123456',
-          direccion: 'Ruta 1',
-        },
-      ]);
-
+  it('re-fetches clients when clicking Reintentar in error state', () => {
     render(
       <ClienteList
+        clientes={[]}
+        loading={false}
+        error={true}
         onSelectCliente={mockOnSelectCliente}
         onNuevoCliente={mockOnNuevoCliente}
+        onRefetch={mockOnRefetch}
       />
     );
 
     expect(
-      await screen.findByText('No se pudo conectar. Revisá tu conexión a internet.')
+      screen.getByText('No se pudo conectar. Revisá tu conexión a internet.')
     ).toBeInTheDocument();
 
     const retryButton = screen.getByRole('button', { name: /reintentar/i });
     fireEvent.click(retryButton);
 
-    expect(await screen.findByText('Estancia La Paz')).toBeInTheDocument();
-    expect(client.apiFetch).toHaveBeenCalledTimes(2);
+    expect(mockOnRefetch).toHaveBeenCalledTimes(1);
   });
 });

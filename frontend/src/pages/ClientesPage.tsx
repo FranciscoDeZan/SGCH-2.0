@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Cliente } from '../types/cliente';
+import { apiFetch } from '../api/client';
 import { ClienteList } from '../components/clientes/ClienteList';
 import { ClienteDetail } from '../components/clientes/ClienteDetail';
 import { ClienteForm } from '../components/clientes/ClienteForm';
@@ -17,6 +18,27 @@ export function ClientesPage({ initialVista = 'lista', initialSelectedCliente = 
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(initialSelectedCliente);
   const [copilotFeedback, setCopilotFeedback] = useState<string | null>(null);
 
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<boolean>(false);
+
+  const fetchClientes = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const data = await apiFetch<Cliente[]>('/clientes');
+      setClientes(data ?? []);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchClientes();
+  }, [fetchClientes]);
+
   if (vista === 'lista') {
     return (
       <div className="space-y-4">
@@ -30,6 +52,10 @@ export function ClientesPage({ initialVista = 'lista', initialSelectedCliente = 
         )}
         <div className="md:hidden">
           <MobileCopilot
+            clientes={clientes}
+            loading={loading}
+            error={error}
+            onRefetch={fetchClientes}
             onActionSuccess={(msg) => {
               setCopilotFeedback(msg);
               setTimeout(() => setCopilotFeedback(null), 3000);
@@ -38,11 +64,15 @@ export function ClientesPage({ initialVista = 'lista', initialSelectedCliente = 
         </div>
         <div className="hidden md:block">
           <ClienteList
+            clientes={clientes}
+            loading={loading}
+            error={error}
             onSelectCliente={(c: Cliente) => {
               setSelectedCliente(c);
               setVista('detalle');
             }}
             onNuevoCliente={() => setVista('alta')}
+            onRefetch={fetchClientes}
           />
         </div>
       </div>
@@ -77,6 +107,7 @@ export function ClientesPage({ initialVista = 'lista', initialSelectedCliente = 
     return (
       <ClienteForm
         onSuccess={(nuevoCliente: Cliente) => {
+          fetchClientes();
           setSelectedCliente(nuevoCliente);
           setVista('detalle');
         }}

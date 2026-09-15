@@ -20,7 +20,8 @@ class MockSpeechRecognition {
       });
     }
   }
-  stop() {}
+  stop = vi.fn();
+  abort = vi.fn();
 }
 
 describe('MobileCopilot', () => {
@@ -39,7 +40,7 @@ describe('MobileCopilot', () => {
   });
 
   // 1. Sin cliente: Botones de acción y micrófono deshabilitados con mensaje "Tocá un cliente primero"
-  it('shows helper text "Tocá un cliente primero" and disables action buttons and mic when no client is selected', async () => {
+  it('shows helper text "Tocá un cliente primero" and disables action buttons and mic when no client is selected', () => {
     const mockClientes: Cliente[] = [
       {
         id: 'c1',
@@ -48,14 +49,16 @@ describe('MobileCopilot', () => {
         direccion: 'Ruta 34 Km 10',
       },
     ];
-    vi.mocked(client.apiFetch).mockResolvedValueOnce(mockClientes);
 
-    render(<MobileCopilot />);
+    render(<MobileCopilot clientes={mockClientes} />);
 
-    expect(await screen.findByText('Estancia La Norteña')).toBeInTheDocument();
+    expect(screen.getByText('Estancia La Norteña')).toBeInTheDocument();
     expect(screen.getByText('Tocá un cliente primero')).toBeInTheDocument();
 
-    const micBtn = screen.getByRole('button', { name: /micrófono/i });
+    const clientBtn = screen.getByRole('button', { name: /estancia la norteña/i });
+    expect(clientBtn).toHaveAttribute('aria-pressed', 'false');
+
+    const micBtn = screen.getByRole('button', { name: /empezar dictado/i });
     const ofreceBtn = screen.getByRole('button', { name: /ofrece/i });
     const buscaBtn = screen.getByRole('button', { name: /busca/i });
     const noAtendioBtn = screen.getByRole('button', { name: /no atendió/i });
@@ -67,7 +70,7 @@ describe('MobileCopilot', () => {
   });
 
   // 2. Con cliente + dictado OK: Mockear SpeechRecognition class, simular dictado, click en "Ofrece" o "Busca" dispara PUT /clientes/{id} con [Ofrece] o [Busca] anexado a observaciones y llama a onActionSuccess
-  it('simulates speech dictation with active client, appends [Ofrece] to observaciones on PUT, and calls onActionSuccess', async () => {
+  it('simulates speech dictation with active client, appends [Ofrece] to observaciones on PUT, and calls onActionSuccess and onRefetch', async () => {
     const mockClientes: Cliente[] = [
       {
         id: 'c1',
@@ -78,19 +81,28 @@ describe('MobileCopilot', () => {
       },
     ];
     const mockOnSuccess = vi.fn();
-    vi.mocked(client.apiFetch)
-      .mockResolvedValueOnce(mockClientes) // Mount GET
-      .mockResolvedValueOnce({ ...mockClientes[0], observaciones: 'Cliente frecuente\n[Ofrece] vende 50 novillos' }) // PUT
-      .mockResolvedValueOnce(mockClientes); // Refetch GET
+    const mockOnRefetch = vi.fn();
+    vi.mocked(client.apiFetch).mockResolvedValueOnce({
+      ...mockClientes[0],
+      observaciones: 'Cliente frecuente\n[Ofrece] vende 50 novillos',
+    });
 
-    render(<MobileCopilot onActionSuccess={mockOnSuccess} />);
+    render(
+      <MobileCopilot
+        clientes={mockClientes}
+        onActionSuccess={mockOnSuccess}
+        onRefetch={mockOnRefetch}
+      />
+    );
 
-    const clientCard = await screen.findByText('Estancia La Norteña');
+    const clientCard = screen.getByRole('button', { name: /estancia la norteña/i });
+    expect(clientCard).toHaveAttribute('aria-pressed', 'false');
     fireEvent.click(clientCard);
+    expect(clientCard).toHaveAttribute('aria-pressed', 'true');
 
     // After selecting, helper text should disappear and mic should be enabled
     expect(screen.queryByText('Tocá un cliente primero')).not.toBeInTheDocument();
-    const micBtn = screen.getByRole('button', { name: /micrófono/i });
+    const micBtn = screen.getByRole('button', { name: /empezar dictado/i });
     expect(micBtn).not.toBeDisabled();
 
     // Click mic to start dictation
@@ -118,8 +130,70 @@ describe('MobileCopilot', () => {
     });
 
     expect(mockOnSuccess).toHaveBeenCalledWith('✅ Registrado');
+    expect(mockOnRefetch).toHaveBeenCalledTimes(1);
     expect(textarea.value).toBe('');
     expect(screen.getByText('Tocá un cliente primero')).toBeInTheDocument();
+  });
+
+  // FIX 1: Micrófono toggle + stop()
+  it('clicking mic twice toggles off cleanly and calls stop()', () => {
+    const stopSpy = vi.fn();
+    class SpySpeechRecognition extends MockSpeechRecognition {
+      constructor() {
+        super();
+        this.stop = stopSpy;
+      }
+    }
+    (window as any).SpeechRecognition = SpySpeechRecognition;
+
+    const mockClientes: Cliente[] = [
+      {
+        id: 'c1',
+        nombreRazonSocial: 'Estancia La Norteña',
+        telefono: '3415551111',
+        direccion: 'Ruta 34 Km 10',
+      },
+    ];
+
+    render(<MobileCopilot clientes={mockClientes} />);
+
+    // Select client first so mic is enabled
+    fireEvent.click(screen.getByText('Estancia La Norteña'));
+
+    const micBtn = screen.getByRole('button', { name: /empezar dictado/i });
+
+    // First click: starts recording
+    fireEvent.click(micBtn);
+    expect(screen.getByRole('button', { name: /detener dictado/i })).toBeInTheDocument();
+    expect(stopSpy).not.toHaveBeenCalled();
+
+    // Second click: stops recording
+    fireEvent.click(screen.getByRole('button', { name: /detener dictado/i }));
+    expect(stopSpy).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: /empezar dictado/i })).toBeInTheDocument();
+  });
+
+  // FIX 1: Cleanup useEffect aborts on unmount
+  it('aborts active speech recognition on unmount', () => {
+    const abortSpy = vi.fn();
+    class SpySpeechRecognition extends MockSpeechRecognition {
+      constructor() {
+        super();
+        this.abort = abortSpy;
+      }
+    }
+    (window as any).SpeechRecognition = SpySpeechRecognition;
+
+    const mockClientes: Cliente[] = [
+      { id: 'c1', nombreRazonSocial: 'Estancia La Norteña', telefono: '123', direccion: 'Ruta 1' },
+    ];
+
+    const { unmount } = render(<MobileCopilot clientes={mockClientes} />);
+    fireEvent.click(screen.getByText('Estancia La Norteña'));
+    fireEvent.click(screen.getByRole('button', { name: /empezar dictado/i }));
+
+    unmount();
+    expect(abortSpy).toHaveBeenCalledTimes(1);
   });
 
   // 3. "No Atendió": Con cliente activo, click en "No Atendió" dispara PUT con fechaUltimoContacto y [No atendió] anexado
@@ -133,14 +207,18 @@ describe('MobileCopilot', () => {
       },
     ];
     const mockOnSuccess = vi.fn();
-    vi.mocked(client.apiFetch)
-      .mockResolvedValueOnce(mockClientes)
-      .mockResolvedValueOnce({ ...mockClientes[0] })
-      .mockResolvedValueOnce(mockClientes);
+    const mockOnRefetch = vi.fn();
+    vi.mocked(client.apiFetch).mockResolvedValueOnce({ ...mockClientes[0] });
 
-    render(<MobileCopilot onActionSuccess={mockOnSuccess} />);
+    render(
+      <MobileCopilot
+        clientes={mockClientes}
+        onActionSuccess={mockOnSuccess}
+        onRefetch={mockOnRefetch}
+      />
+    );
 
-    const clientCard = await screen.findByText('Agropecuaria El Ombú');
+    const clientCard = screen.getByText('Agropecuaria El Ombú');
     fireEvent.click(clientCard);
 
     const noAtendioBtn = screen.getByRole('button', { name: /no atendió/i });
@@ -164,10 +242,66 @@ describe('MobileCopilot', () => {
     expect(sentBody.fechaUltimoContacto).toBeTruthy();
     expect(sentBody.observaciones).toMatch(/\[No atendió\]/);
     expect(mockOnSuccess).toHaveBeenCalledWith('✅ Registrado');
+    expect(mockOnRefetch).toHaveBeenCalledTimes(1);
+  });
+
+  // FIX 2: "No Atendió" preserva texto dictado
+  it('"No Atendió" with dictation text dispatches PUT with both date and text appended', async () => {
+    const mockClientes: Cliente[] = [
+      {
+        id: 'c3',
+        nombreRazonSocial: 'Cabaña San José',
+        telefono: '3414445566',
+        direccion: 'Ruta 18 Km 12',
+        observaciones: 'Llamar después de las 18hs',
+      },
+    ];
+    const mockOnSuccess = vi.fn();
+    const mockOnRefetch = vi.fn();
+    vi.mocked(client.apiFetch).mockResolvedValueOnce({ ...mockClientes[0] });
+
+    render(
+      <MobileCopilot
+        clientes={mockClientes}
+        onActionSuccess={mockOnSuccess}
+        onRefetch={mockOnRefetch}
+      />
+    );
+
+    const clientCard = screen.getByText('Cabaña San José');
+    fireEvent.click(clientCard);
+
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: 'llamó el hijo pidiendo llamar mañana' } });
+
+    const noAtendioBtn = screen.getByRole('button', { name: /no atendió/i });
+    fireEvent.click(noAtendioBtn);
+
+    await waitFor(() => {
+      expect(client.apiFetch).toHaveBeenCalledWith(
+        '/clientes/c3',
+        expect.objectContaining({
+          method: 'PUT',
+        })
+      );
+    });
+
+    const putCall = vi.mocked(client.apiFetch).mock.calls.find(
+      (c) => c[0] === '/clientes/c3' && c[1]?.method === 'PUT'
+    );
+    expect(putCall).toBeDefined();
+    const sentBody = JSON.parse(putCall![1]!.body as string);
+    expect(sentBody.fechaUltimoContacto).toBeTruthy();
+    expect(sentBody.observaciones).toContain('Llamar después de las 18hs');
+    expect(sentBody.observaciones).toContain('[No atendió]');
+    expect(sentBody.observaciones).toContain('llamó el hijo pidiendo llamar mañana');
+    expect(mockOnSuccess).toHaveBeenCalledWith('✅ Registrado');
+    expect(mockOnRefetch).toHaveBeenCalledTimes(1);
+    expect(textarea.value).toBe('');
   });
 
   // 4. Fallback: window.SpeechRecognition y webkitSpeechRecognition undefined -> mensaje "Tu navegador no soporta dictado. Escribí manualmente." y botón de micrófono deshabilitado
-  it('shows unsupported browser message and disables microphone when SpeechRecognition is undefined', async () => {
+  it('shows unsupported browser message and disables microphone when SpeechRecognition is undefined', () => {
     (window as any).SpeechRecognition = undefined;
     (window as any).webkitSpeechRecognition = undefined;
 
@@ -179,16 +313,15 @@ describe('MobileCopilot', () => {
         direccion: 'Ruta 34 Km 10',
       },
     ];
-    vi.mocked(client.apiFetch).mockResolvedValueOnce(mockClientes);
 
-    render(<MobileCopilot />);
+    render(<MobileCopilot clientes={mockClientes} />);
 
-    expect(await screen.findByText('Estancia La Norteña')).toBeInTheDocument();
+    expect(screen.getByText('Estancia La Norteña')).toBeInTheDocument();
     expect(
       screen.getByText('Tu navegador no soporta dictado. Escribí manualmente.')
     ).toBeInTheDocument();
 
-    const micBtn = screen.getByRole('button', { name: /micrófono/i });
+    const micBtn = screen.getByRole('button', { name: /empezar dictado/i });
     expect(micBtn).toBeDisabled();
   });
 
@@ -202,15 +335,14 @@ describe('MobileCopilot', () => {
         direccion: 'Ruta 34 Km 10',
       },
     ];
+    const mockOnRefetch = vi.fn();
     vi.mocked(client.apiFetch)
-      .mockResolvedValueOnce(mockClientes) // Mount GET
       .mockRejectedValueOnce(new Error('Network error')) // PUT fail
-      .mockResolvedValueOnce({ ...mockClientes[0] }) // Retry PUT success
-      .mockResolvedValueOnce(mockClientes); // Refetch GET
+      .mockResolvedValueOnce({ ...mockClientes[0] }); // Retry PUT success
 
-    render(<MobileCopilot />);
+    render(<MobileCopilot clientes={mockClientes} onRefetch={mockOnRefetch} />);
 
-    const clientCard = await screen.findByText('Estancia La Norteña');
+    const clientCard = screen.getByText('Estancia La Norteña');
     fireEvent.click(clientCard);
 
     const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
@@ -241,5 +373,6 @@ describe('MobileCopilot', () => {
     });
     expect(textarea.value).toBe('');
     expect(screen.getByText('Tocá un cliente primero')).toBeInTheDocument();
+    expect(mockOnRefetch).toHaveBeenCalledTimes(1);
   });
 });

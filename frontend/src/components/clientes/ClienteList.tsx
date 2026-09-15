@@ -1,35 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
-import { apiFetch } from '../../api/client';
 import type { Cliente } from '../../types/cliente';
 
 export interface ClienteListProps {
+  clientes: Cliente[];
+  loading?: boolean;
+  error?: boolean;
   onSelectCliente: (cliente: Cliente) => void;
   onNuevoCliente: () => void;
+  onRefetch?: () => void;
 }
 
-export function ClienteList({ onSelectCliente, onNuevoCliente }: ClienteListProps) {
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<boolean>(false);
-
-  const fetchClientes = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    apiFetch<Cliente[]>('/clientes')
-      .then((data) => {
-        setClientes(data ?? []);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError(true);
-        setLoading(false);
-      });
-  }, []);
-
-  useEffect(() => {
-    fetchClientes();
-  }, [fetchClientes]);
-
+export function ClienteList({
+  clientes = [],
+  loading = false,
+  error = false,
+  onSelectCliente,
+  onNuevoCliente,
+  onRefetch,
+}: ClienteListProps) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -48,7 +35,7 @@ export function ClienteList({ onSelectCliente, onNuevoCliente }: ClienteListProp
         <p className="font-medium mb-4">No se pudo conectar. Revisá tu conexión a internet.</p>
         <button
           type="button"
-          onClick={fetchClientes}
+          onClick={onRefetch}
           className="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-md font-medium transition cursor-pointer"
         >
           Reintentar

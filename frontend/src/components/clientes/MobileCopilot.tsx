@@ -1,20 +1,40 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Cliente } from '../../types/cliente';
 import { apiFetch } from '../../api/client';
 
 export interface MobileCopilotProps {
+  clientes: Cliente[];
+  loading?: boolean;
+  error?: boolean;
+  onRefetch?: () => void;
   onActionSuccess?: (msg: string) => void;
 }
 
-export function MobileCopilot({ onActionSuccess }: MobileCopilotProps) {
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [loadingClientes, setLoadingClientes] = useState<boolean>(true);
+export function MobileCopilot({
+  clientes = [],
+  loading = false,
+  error: _error,
+  onRefetch,
+  onActionSuccess,
+}: MobileCopilotProps) {
   const [activeCliente, setActiveCliente] = useState<Cliente | null>(null);
   const [dictationText, setDictationText] = useState<string>('');
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [putError, setPutError] = useState<string | null>(null);
   const [lastFailedAction, setLastFailedAction] = useState<(() => Promise<void>) | null>(null);
+
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {}
+      }
+    };
+  }, []);
 
   const [speechError, setSpeechError] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
@@ -28,47 +48,45 @@ export function MobileCopilot({ onActionSuccess }: MobileCopilotProps) {
     typeof window !== 'undefined' &&
     Boolean((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
 
-  const fetchClientes = useCallback(async () => {
-    setLoadingClientes(true);
-    try {
-      const data = await apiFetch<Cliente[]>('/clientes');
-      setClientes(data ?? []);
-    } catch {
-      // Ignorar o mantener lista previa
-    } finally {
-      setLoadingClientes(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchClientes();
-  }, [fetchClientes]);
-
   const handleMicClick = () => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) {
       setSpeechError('Tu navegador no soporta dictado. Escribí manualmente.');
       return;
     }
+
+    if (isRecording) {
+      try {
+        recognitionRef.current?.stop();
+      } catch {}
+      recognitionRef.current = null;
+      setIsRecording(false);
+      return;
+    }
+
     setSpeechError(null);
     try {
       const rec = new SR();
       rec.lang = 'es-AR';
-      setIsRecording(true);
       rec.onresult = (e: any) => {
         const transcript = e.results[0][0].transcript;
         setDictationText((prev) => (prev ? `${prev} ${transcript}` : transcript));
       };
       rec.onerror = (e: any) => {
         setSpeechError('Error: ' + e.error);
+        recognitionRef.current = null;
         setIsRecording(false);
       };
       rec.onend = () => {
+        recognitionRef.current = null;
         setIsRecording(false);
       };
+      recognitionRef.current = rec;
+      setIsRecording(true);
       rec.start();
     } catch (err: any) {
       setSpeechError('Error: ' + (err.message || 'error desconocido'));
+      recognitionRef.current = null;
       setIsRecording(false);
     }
   };
@@ -88,7 +106,7 @@ export function MobileCopilot({ onActionSuccess }: MobileCopilotProps) {
       onActionSuccess?.('✅ Registrado');
       setDictationText('');
       setActiveCliente(null);
-      await fetchClientes();
+      onRefetch?.();
     } catch {
       setPutError('No se pudo guardar. Reintentá en un momento.');
       setLastFailedAction(() => () => executeAction(payload));
@@ -124,9 +142,17 @@ export function MobileCopilot({ onActionSuccess }: MobileCopilotProps) {
   const handleNoAtendio = () => {
     if (!activeCliente?.id) return;
     const dateStr = new Date().toLocaleDateString('es-AR');
-    const newObservaciones = activeCliente.observaciones
-      ? `${activeCliente.observaciones}\n[No atendió] ${dateStr}`
+    // Decisión R-041: si hay texto dictado + click en "No Atendió",
+    // anexamos el texto. Caso raro pero preferimos sobre-guardar a perder
+    // información. El usuario puede editar y limpiar después.
+    const entry = dictationText.trim()
+      ? `[No atendió] ${dateStr} - ${dictationText.trim()}`
       : `[No atendió] ${dateStr}`;
+
+    const newObservaciones = activeCliente.observaciones
+      ? `${activeCliente.observaciones}\n${entry}`
+      : entry;
+
     const payload: Cliente = {
       ...activeCliente,
       fechaUltimoContacto: new Date().toISOString(),
@@ -151,7 +177,7 @@ export function MobileCopilot({ onActionSuccess }: MobileCopilotProps) {
 
       {/* Lista de clientes para seleccionar */}
       <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-        {loadingClientes && clientes.length === 0 ? (
+        {loading && clientes.length === 0 ? (
           <p className="text-sm text-gray-500 py-2">Cargando tareas...</p>
         ) : clientes.length === 0 ? (
           <p className="text-sm text-gray-500 py-2">No hay clientes disponibles para hoy.</p>
@@ -162,6 +188,7 @@ export function MobileCopilot({ onActionSuccess }: MobileCopilotProps) {
               <button
                 key={cliente.id || cliente.nombreRazonSocial}
                 type="button"
+                aria-pressed={isSelected}
                 onClick={() => setActiveCliente(cliente)}
                 className={`w-full text-left p-3 rounded-lg border transition cursor-pointer ${
                   isSelected
@@ -205,7 +232,7 @@ export function MobileCopilot({ onActionSuccess }: MobileCopilotProps) {
         />
         <button
           type="button"
-          aria-label="Micrófono"
+          aria-label={isRecording ? 'Detener dictado' : 'Empezar dictado'}
           disabled={isMicDisabled}
           onClick={handleMicClick}
           className={`absolute right-2.5 top-2.5 p-2 rounded-full border transition cursor-pointer ${
@@ -215,7 +242,21 @@ export function MobileCopilot({ onActionSuccess }: MobileCopilotProps) {
           }`}
           title="Dictar nota"
         >
-          🎙️
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="w-6 h-6"
+          >
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="22" />
+          </svg>
         </button>
       </div>
 
