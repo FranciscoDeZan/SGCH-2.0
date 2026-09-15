@@ -74,6 +74,10 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 | **R-049** | Fase B | — | Cierre de Fase B | Aplicado |
 | **R-050** | Fase B | — | Política de re-verificación de quotas | Documentado |
 | **R-051** | Fase B | — | Deuda técnica post-MVP (registro acumulado) | Documentado |
+| **R-052** | Cierre Fase B | — | Cierre de Fase B formal | Aplicado |
+| **R-053** | Cierre Fase B | — | Estrategia de push + merge para Fase B | Aplicado |
+| **R-054** | Fix 9543c08 | — | Cleanup de TODOs en MVP | Aplicado |
+| **R-055** | Decisión de cierre | — | Conservación vs borrado de ramas feature | Aplicado |
 
 ---
 
@@ -396,6 +400,28 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 - **Estado:** Documentado en progress.md de Fase B.
 - **Ref:** Tasks 1-8.
 
+### R-052: Cierre de Fase B formal
+- **Qué:** Fase B cerrada. 19 commits en feat/ui-clientes mergeados a main vía fast-forward. 3,727 insertions / 989 deletions en 28 archivos. 75 tests pasando. 51 rulings consolidados. REPORT.md actualizado.
+- **Por qué:** Hito funcional del proyecto. UI operable end-to-end contra backend.
+- **Estado:** Aplicado.
+- **Ref:** Cierre Fase B.
+
+### R-053: Estrategia de push + merge para Fase B
+- **Qué:** Push rama feature → verificación de hashes → merge fast-forward a main → push main. Sin force. Rama feature borrada después del merge.
+- **Por qué:** Mismo patrón que Step 2. Backup remoto antes de merge. Historia lineal.
+- **Estado:** Aplicado.
+- **Ref:** Cierre Fase B.
+
+### R-054: Cleanup de TODOs en MVP
+- **Qué:** No dejar TODOs activos. Si el fallback es defensivo legítimo, documentarlo con comentario correcto. Si es código muerto, eliminar. Decisión por compilación de TypeScript, no a ojo.
+- **Estado:** Aplicado.
+- **Ref:** Fix 9543c08.
+
+### R-055: Conservación vs borrado de ramas feature
+- **Qué:** Después de fast-forward merge a main, borrar la rama feature (local y remoto). Los commits ya están en main. Conservar la rama es ruido. Excepción: si el merge fue merge commit (no fast-forward) y querés conservar el contexto del PR, mantener hasta que pase el review.
+- **Estado:** Aplicado.
+- **Ref:** Decisión de cierre.
+
 ---
 
 ## Notas de Auditoría (Observaciones)
@@ -427,3 +453,4 @@ El subagent-driven-development con Gemini 3.8 Flash genera ~30 subagentes por se
 | 2026-09-14 | Antigravity + Usuario | Creación inicial | Consolidación canónica de R-001..R-016 y NA-001..NA-003 a partir de `progress.md` y auditoría externa. |
 | 2026-09-14 | Antigravity + Usuario | Actualización | Incorporación de R-017 y actualización de R-012 tras verificación de Docker Desktop y 21/21 tests pasando. |
 | 2026-09-15 | Antigravity + Usuario | Actualización | Incorporación de R-018..R-051 y NA-004..NA-006, actualización de NA-003 tras finalización de Fase B (Frontend UI Clientes). |
+| 2026-09-15 | Antigravity + Usuario | Actualización | Incorporación de R-052..R-055 tras borrado de rama feature y cierre formal de Fase B. |
