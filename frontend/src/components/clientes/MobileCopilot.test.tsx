@@ -375,4 +375,105 @@ describe('MobileCopilot', () => {
     expect(screen.getByText('Tocá un cliente primero')).toBeInTheDocument();
     expect(mockOnRefetch).toHaveBeenCalledTimes(1);
   });
+
+  // Task 6.5 Fix Wave tests:
+  it('stops recording and resets isRecording when executing an action while recording', async () => {
+    const stopSpy = vi.fn();
+    class SpySpeechRecognition extends MockSpeechRecognition {
+      constructor() {
+        super();
+        this.stop = stopSpy;
+      }
+    }
+    (window as any).SpeechRecognition = SpySpeechRecognition;
+
+    const mockClientes: Cliente[] = [
+      {
+        id: 'c1',
+        nombreRazonSocial: 'Estancia La Norteña',
+        telefono: '3415551111',
+        direccion: 'Ruta 34 Km 10',
+      },
+    ];
+    vi.mocked(client.apiFetch).mockResolvedValueOnce({ ...mockClientes[0] });
+
+    render(<MobileCopilot clientes={mockClientes} />);
+
+    // Select client
+    fireEvent.click(screen.getByText('Estancia La Norteña'));
+
+    // Start recording
+    const micBtn = screen.getByRole('button', { name: /empezar dictado/i });
+    fireEvent.click(micBtn);
+
+    expect(screen.getByRole('button', { name: /detener dictado/i })).toBeInTheDocument();
+
+    // Click "Ofrece"
+    const ofreceBtn = screen.getByRole('button', { name: /ofrece/i });
+    fireEvent.click(ofreceBtn);
+
+    expect(stopSpy).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /empezar dictado/i })).toBeInTheDocument();
+    });
+  });
+
+  it('renders error state when error is true and handles retry without showing empty list', () => {
+    const mockOnRefetch = vi.fn();
+
+    render(<MobileCopilot clientes={[]} error={true} onRefetch={mockOnRefetch} />);
+
+    expect(
+      screen.getByText('No se pudo conectar. Revisá tu conexión a internet.')
+    ).toBeInTheDocument();
+    expect(screen.queryByText('No hay clientes disponibles para hoy.')).not.toBeInTheDocument();
+
+    const retryBtn = screen.getByRole('button', { name: /reintentar/i });
+    expect(retryBtn).toBeInTheDocument();
+
+    fireEvent.click(retryBtn);
+    expect(mockOnRefetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('has aria-label="Nota o dictado para el cliente" on textarea', () => {
+    render(<MobileCopilot clientes={[]} />);
+    expect(
+      screen.getByRole('textbox', { name: 'Nota o dictado para el cliente' })
+    ).toBeInTheDocument();
+  });
+
+  it('cleans up callbacks and aborts speech recognition on unmount', () => {
+    let instance: MockSpeechRecognition | null = null;
+    class SpySpeechRecognition extends MockSpeechRecognition {
+      constructor() {
+        super();
+        instance = this;
+      }
+    }
+    (window as any).SpeechRecognition = SpySpeechRecognition;
+
+    const mockClientes: Cliente[] = [
+      { id: 'c1', nombreRazonSocial: 'Estancia La Norteña', telefono: '123', direccion: 'Ruta 1' },
+    ];
+
+    const { unmount } = render(<MobileCopilot clientes={mockClientes} />);
+    fireEvent.click(screen.getByText('Estancia La Norteña'));
+    fireEvent.click(screen.getByRole('button', { name: /empezar dictado/i }));
+
+    expect(instance).not.toBeNull();
+    expect(instance!.onresult).toBeDefined();
+
+    unmount();
+
+    expect(instance!.abort).toHaveBeenCalledTimes(1);
+    expect(instance!.onresult).toBeNull();
+    expect(instance!.onerror).toBeNull();
+    expect(instance!.onend).toBeNull();
+  });
+
+  it('has aria-hidden="true" on decorative mic svg', () => {
+    const { container } = render(<MobileCopilot clientes={[]} />);
+    const svg = container.querySelector('button[aria-label="Empezar dictado"] svg');
+    expect(svg).toHaveAttribute('aria-hidden', 'true');
+  });
 });

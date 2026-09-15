@@ -13,7 +13,7 @@ export interface MobileCopilotProps {
 export function MobileCopilot({
   clientes = [],
   loading = false,
-  error: _error,
+  error = false,
   onRefetch,
   onActionSuccess,
 }: MobileCopilotProps) {
@@ -29,6 +29,9 @@ export function MobileCopilot({
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
         try {
           recognitionRef.current.abort();
         } catch {}
@@ -93,6 +96,12 @@ export function MobileCopilot({
 
   const executeAction = async (payload: Cliente) => {
     if (isSubmitting) return;
+    if (isRecording) {
+      try {
+        recognitionRef.current?.stop();
+      } catch {}
+      setIsRecording(false);
+    }
     setIsSubmitting(true);
     setPutError(null);
 
@@ -164,6 +173,23 @@ export function MobileCopilot({
   const isActionsDisabled = !activeCliente || isSubmitting;
   const isMicDisabled = !activeCliente || !hasSpeechRecognition || isSubmitting;
 
+  if (error) {
+    return (
+      <div className="p-4 text-center">
+        <p className="text-xl font-bold mb-4">
+          No se pudo conectar. Revisá tu conexión a internet.
+        </p>
+        <button
+          type="button"
+          onClick={onRefetch}
+          className="bg-black text-white font-bold py-3 px-6 text-lg rounded-md"
+        >
+          Reintentar
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -220,6 +246,7 @@ export function MobileCopilot({
       <div className="relative">
         <textarea
           rows={3}
+          aria-label="Nota o dictado para el cliente"
           value={dictationText}
           onChange={(e) => setDictationText(e.target.value)}
           disabled={isSubmitting}
@@ -243,6 +270,7 @@ export function MobileCopilot({
           title="Dictar nota"
         >
           <svg
+            aria-hidden="true"
             width="24"
             height="24"
             viewBox="0 0 24 24"
