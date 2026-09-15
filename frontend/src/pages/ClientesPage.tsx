@@ -128,9 +128,6 @@ export function ClientesPage({ initialVista = 'lista', initialSelectedCliente = 
         />
       );
     }
-
-    // TODO: Implementar en próximas tasks
-    return <div className="p-4">En construcción</div>;
   };
 
   return (
