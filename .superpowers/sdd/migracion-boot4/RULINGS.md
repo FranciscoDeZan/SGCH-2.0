@@ -4,7 +4,7 @@
 - **Proyecto:** SGCH 2.0
 - **Rama:** feat/migracion-spring-boot-4
 - **Fecha de consolidación:** 2026-09-14 13:45 -03:00
-- **Última revisión:** 2026-09-14
+- **Última revisión:** 2026-09-15
 - **Próxima revisión:** Antes de cerrar Iteración 1 / Inicio de Iteración 2
 
 ---
@@ -40,6 +40,40 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 | **R-015** | Auditor | — | Consolidar rulings en `RULINGS.md` canónico | Aplicado |
 | **R-016** | Auditor | — | Usar skills de Superpowers para consolidación documental | Aplicado |
 | **R-017** | progress.md / Test | Ruling 6 | Cierre de Step 2: 21/21 tests pasando, Docker operativo | Aplicado |
+| **R-018** | Auditor | — | Estrategia de push + merge Step 2 | Aplicado |
+| **R-019** | Fase B | — | Decisiones de Fase B (UI Clientes) | Aplicado |
+| **R-020** | Auditor | — | Política de modelos Gemini | Aplicado |
+| **R-021** | Fase B | — | Navegación por estado (no React Router) | Aplicado |
+| **R-022** | Fase B | — | Scope policy Fase B | Aplicado |
+| **R-023** | Fase B | — | Estrategia de rechazo de plan | Aplicado |
+| **R-024** | Fase B | — | Verificación empírica de tipos | Aplicado |
+| **R-025** | Auditor | — | Callback pattern para desacoplar componentes | Aplicado |
+| **R-026** | Fase B | — | TDD estricto por cada componente | Aplicado |
+| **R-027** | Fase B | — | Manejo de código heredado de Iteración 1 | Aplicado |
+| **R-028** | Fase B | — | No coexisten código viejo y nuevo | Aplicado |
+| **R-029** | Fase B | — | Política de minors del code-reviewer | Aplicado |
+| **R-030** | Fase B | — | tel: sin prependear +54 | Aplicado |
+| **R-031** | Fase B | — | Verificar endpoint PUT antes de implementar UPDATE | Aplicado |
+| **R-032** | Fase B | — | Guard contra doble-submit (crítico) | Aplicado |
+| **R-033** | Fase B | — | No tocar código en vía de extinción | Aplicado |
+| **R-034** | Fase B | — | Vite config desde vitest/config | Aplicado |
+| **R-035** | Fase B | — | ApiError estructurada para RFC 7807 | Aplicado |
+| **R-036** | Fase B | — | Two-reviewer pattern obligatorio | Aplicado |
+| **R-037** | Fase B | — | Checkpoints humanos entre tasks | Aplicado |
+| **R-038** | Fase B | — | Commits atómicos con delete + create | Aplicado |
+| **R-039** | Fase B | — | Micrófono: toggle y cleanup | Aplicado |
+| **R-040** | Fase B | — | "No Atendió" preserva texto dictado | Aplicado |
+| **R-041** | Fase B | — | Elevar fetch de clientes a ClientesPage | Aplicado |
+| **R-042** | Fase B | — | Emojis prohibidos en UI | Aplicado |
+| **R-043** | Fase B | — | Detener micrófono en executeAction | Aplicado |
+| **R-044** | Fase B | — | Estado de error explícito en MobileCopilot | Aplicado |
+| **R-045** | Antigravity | — | Cleanup de subagentes en Antigravity | Aplicado |
+| **R-046** | Fase B | — | Refactor de fallback nulo compartido en ClientesPage | Aplicado |
+| **R-047** | Fase B | — | Toast component con auto-dismiss 3s | Aplicado |
+| **R-048** | Fase B | — | Callback pattern conectado al Toast real | Aplicado |
+| **R-049** | Fase B | — | Cierre de Fase B | Aplicado |
+| **R-050** | Fase B | — | Política de re-verificación de quotas | Documentado |
+| **R-051** | Fase B | — | Deuda técnica post-MVP (registro acumulado) | Documentado |
 
 ---
 
@@ -158,6 +192,210 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 - **Estado:** Aplicado.
 - **Ref:** progress.md (Ruling 6)
 
+### R-018: Estrategia de push + merge Step 2
+- **Qué:** Commit consolidado de migración + docs se pushea a rama feature primero, luego merge fast-forward a main. Sin force, sin rebase.
+- **Por qué:** Push primero = backup remoto. Fast-forward limpio. Sin force = no romper historia.
+- **Estado:** Aplicado (commit 87346f8 + dba61e3 en main).
+- **Ref:** Auditor externo (chat).
+
+### R-019: Decisiones de Fase B (UI Clientes)
+- **Qué:** (a) Desktop Master-Detail "Radar Dividido". (b) Mobile Copilot con dictado por voz real (Web Speech API). (c) Alto contraste, letras grandes, botones masivos. (d) Terminología: "Dar de alta" y "Registrar operación".
+- **Por qué:** Usuarios con baja alfabetización digital. Vienen de Excel. La inteligencia de mercado (quién tiene / quién busca) es el corazón del negocio.
+- **Estado:** Aplicado.
+- **Ref:** Fase B brainstorm.
+
+### R-020: Política de modelos Gemini
+- **Qué:** Gemini 3.1 Pro (high) para pensar. Gemini 3.8 Flash (high) para ejecutar.
+- **Por qué:** Pro modela mejor problemas nuevos. Flash es 3x más barato y excelente para TDD.
+- **Estado:** Aplicado.
+- **Ref:** Auditor externo (chat).
+
+### R-021: Navegación por estado (no React Router)
+- **Qué:** ClientesPage maneja useState<Vista>. Sin React Router.
+- **Por qué:** MVP de 4 vistas, YAGNI. Una dependencia menos.
+- **Estado:** Aplicado.
+- **Ref:** Fase B planning.
+
+### R-022: Scope policy Fase B
+- **Qué:** Fase B incluye lista, detalle, alta, edición, mobile. NO incluye Operaciones ni IVA (Iteración 2) ni CRM (Iteración 3).
+- **Por qué:** Evitar scope creep.
+- **Estado:** Aplicado.
+- **Ref:** Fase B planning.
+
+### R-023: Estrategia de rechazo de plan
+- **Qué:** Rechazo con investigaciones obligatorias + lista de problemas con severidad + estructura fija + reglas explícitas.
+- **Por qué:** Rechazo sin correcciones específicas genera ruido.
+- **Estado:** Aplicado (3 rounds para Fase B).
+- **Ref:** Fase B planning.
+
+### R-024: Verificación empírica de tipos
+- **Qué:** El campo `id` del entity Cliente es String (UUID) por @GeneratedValue(strategy = GenerationType.UUID). TypeScript usa id?: string.
+- **Por qué:** Plan inicial decía "UUID from backend" sin verificar. Política: verificar contra código fuente antes de asumir.
+- **Estado:** Aplicado.
+- **Ref:** Fase B planning.
+
+### R-025: Callback pattern para desacoplar componentes
+- **Qué:** Componentes que necesitan feedback reciben callback onActionSuccess: (msg: string) => void. El Toast real se conecta después.
+- **Por qué:** Resuelve dependencia de orden (Task 6 consume Toast que Task 8 crea).
+- **Estado:** Aplicado.
+- **Ref:** Auditor externo (chat).
+
+### R-026: TDD estricto por cada componente
+- **Qué:** Test primero. RED → GREEN → refactor → commit. Un commit atómico por task.
+- **Por qué:** Regla operativa no negociable.
+- **Estado:** Aplicado en Tasks 1-8 de Fase B.
+- **Ref:** Fase B ejecución.
+
+### R-027: Manejo de código heredado de Iteración 1
+- **Qué:** Al reemplazar App.tsx, ClienteTable.tsx, ClienteModal.tsx, clienteService.ts: reemplazo completo, no adaptación.
+- **Por qué:** El código de Iteración 1 tiene patrones inconsistentes (axios, métricas hardcoded, modales). Adaptar propaga deuda.
+- **Estado:** Aplicado (App.tsx 202→10 líneas).
+- **Ref:** Fase B ejecución.
+
+### R-028: No coexisten código viejo y nuevo
+- **Qué:** Cuando dos archivos hacen lo mismo con tecnología distinta, el reemplazo va en el mismo commit: crear nuevo + eliminar viejo.
+- **Por qué:** "Coexistencia pacífica" genera deuda inmediata.
+- **Estado:** Aplicado.
+- **Ref:** Fase B ejecución.
+
+### R-029: Política de minors del code-reviewer
+- **Qué:** Aprobar minors que alinean con UX. Rechazar cosméticos sin valor. Diferir a post-MVP.
+- **Por qué:** Evitar scope creep. MVP primero.
+- **Estado:** Aplicado en Tasks 1-8.
+- **Ref:** Fase B ejecución.
+
+### R-030: tel: sin prependear +54
+- **Qué:** En ClienteDetail, teléfono es link tel: con limpieza de caracteres no numéricos. NO se prepende +54.
+- **Por qué:** El campo telefono puede traer o no código país. Prependear duplicaría.
+- **Estado:** Aplicado.
+- **Ref:** Task 4.5 minors.
+
+### R-031: Verificar endpoint PUT antes de implementar UPDATE
+- **Qué:** Leer el controller del backend para confirmar full object vs DTO parcial antes de implementar cualquier UPDATE en frontend.
+- **Por qué:** Asumir la forma del payload rompe en runtime.
+- **Estado:** Aplicado (Task 6).
+- **Ref:** Fase B ejecución.
+
+### R-032: Guard contra doble-submit (crítico)
+- **Qué:** En ClienteForm: if (isSubmitting) return; + disabled en todos los botones + texto "Guardando..." durante submit.
+- **Por qué:** Usuarios de baja alfabetización tocan múltiples veces. Sin guard se crean clientes duplicados.
+- **Estado:** Aplicado.
+- **Ref:** Task 5 fix.
+
+### R-033: No tocar código en vía de extinción
+- **Qué:** Cuando un archivo va a ser eliminado en task posterior, NO invertir esfuerzo en arreglarlo.
+- **Por qué:** Esfuerzo desperdiciado. Se reescribe desde cero.
+- **Estado:** Aplicado.
+- **Ref:** Task 2 fix.
+
+### R-034: Vite config desde vitest/config
+- **Qué:** vite.config.ts importa defineConfig desde vitest/config, no desde vite.
+- **Por qué:** defineConfig de vite no reconoce `test`, rompiendo tsc -b.
+- **Estado:** Aplicado (commit f83cbba).
+- **Ref:** Task 1 fix.
+
+### R-035: ApiError estructurada para RFC 7807
+- **Qué:** Clase ApiError extends Error con status, statusText, data. Se lanza en apiFetch cuando !response.ok.
+- **Por qué:** Migrar de axios a fetch pierde axios.isAxiosError. ApiError restaura la capacidad de extraer data.detail / data.errores.
+- **Estado:** Aplicado (commit 4545449).
+- **Ref:** Task 2 fix.
+
+### R-036: Two-reviewer pattern obligatorio
+- **Qué:** Cada task pasa por spec-reviewer + code-reviewer. Fix-loop si alguno falla.
+- **Por qué:** Previene bugs que el implementer no ve.
+- **Estado:** Aplicado en Tasks 1-8.
+- **Ref:** Fase B ejecución.
+
+### R-037: Checkpoints humanos entre tasks
+- **Qué:** Después de cada task, agente reporta git log + tests + build + reviewers. Espera OK explícito.
+- **Por qué:** Regla operativa no negociable.
+- **Estado:** Aplicado en 20+ checkpoints.
+- **Ref:** Fase B ejecución.
+
+### R-038: Commits atómicos con delete + create
+- **Qué:** 1 commit por task. Reemplazos (delete + create) en el mismo commit. Conventional Commits.
+- **Por qué:** Historia limpia. Revertible.
+- **Estado:** Aplicado.
+- **Ref:** Fase B ejecución.
+
+### R-039: Micrófono: toggle y cleanup
+- **Qué:** recognition guardado en useRef. Toggle: si isRecording → stop(), si no → start(). Cleanup en unmount: nullificar callbacks + abort().
+- **Por qué:** Previene InvalidStateError, micrófono huérfano (privacidad), batería.
+- **Estado:** Aplicado (commit 77f597a).
+- **Ref:** Task 6 fix.
+
+### R-040: "No Atendió" preserva texto dictado
+- **Qué:** Si el usuario dictó texto y toca "No Atendió", se anexa: [No atendió] {fecha} - {texto}.
+- **Por qué:** Preferimos sobre-guardar que perder información. El usuario puede editar después.
+- **Estado:** Aplicado (commit 77f597a).
+- **Ref:** Task 6 fix.
+
+### R-041: Elevar fetch de clientes a ClientesPage
+- **Qué:** Un solo owner del estado clientes (ClientesPage). ClienteList y MobileCopilot reciben clientes como prop.
+- **Por qué:** Ambos están montados simultáneamente (CSS oculta), generando doble request.
+- **Estado:** Aplicado (commit 77f597a).
+- **Ref:** Task 6 fix.
+
+### R-042: Emojis prohibidos en UI
+- **Qué:** Todo ícono es SVG inline con stroke="currentColor".
+- **Por qué:** Emojis se ven distintos entre plataformas. No son SVG (viola Global Constraints).
+- **Estado:** Aplicado.
+- **Ref:** Task 6 fix.
+
+### R-043: Detener micrófono en executeAction
+- **Qué:** Antes de disparar el PUT, si isRecording, detener recognition y setIsRecording(false).
+- **Por qué:** El PUT deselecciona el cliente, pero recognition sigue activo en background.
+- **Estado:** Aplicado (commit 77f597a).
+- **Ref:** Task 6.5 fix.
+
+### R-044: Estado de error explícito en MobileCopilot
+- **Qué:** La prop error NO se descarta. Cuando falla el fetch, mostrar banner con "Reintentar" (no empty state).
+- **Por qué:** "No hay clientes" cuando la red falla es engañoso.
+- **Estado:** Aplicado (commit 77f597a).
+- **Ref:** Task 6.5 fix.
+
+### R-045: Cleanup de subagentes en Antigravity
+- **Qué:** La plataforma mantiene 20 subagentes máximos en buffer. Al superar, manage_subagents(kill) sobre los idle.
+- **Por qué:** Sin efecto en repo ni pérdida de trabajo.
+- **Estado:** Aplicado.
+- **Ref:** Explicación del agente.
+
+### R-046: Refactor de fallback nulo compartido en ClientesPage
+- **Qué:** Extraer el fallback defensivo (vista detalle/edición sin cliente) a subcomponente interno EmptyFallback con role="status".
+- **Por qué:** DRY + accesibilidad.
+- **Estado:** Aplicado (commit 794ab98).
+- **Ref:** Task 7 minor.
+
+### R-047: Toast component con auto-dismiss 3s
+- **Qué:** role="status", aria-live="polite", setTimeout 3000ms con cleanup, botón close con SVG inline. Timer con useRef para no resetear en re-render.
+- **Por qué:** Feedback visual crítico para usuarios de baja alfabetización.
+- **Estado:** Aplicado (commit 50d5540).
+- **Ref:** Task 8.
+
+### R-048: Callback pattern conectado al Toast real
+- **Qué:** onActionSuccess de MobileCopilot se conecta a setToastMessage en ClientesPage. Cierra el patrón de R-025.
+- **Por qué:** Resuelve dependencia circular sin refactor.
+- **Estado:** Aplicado (commit 50d5540).
+- **Ref:** Task 8.
+
+### R-049: Cierre de Fase B
+- **Qué:** Fase B (UI Clientes) completa. 9 tasks. 75 tests. 0 warnings. 0 referencias a axios. 0 código legacy de Iteración 1.
+- **Por qué:** Hito funcional del proyecto. UI operable end-to-end contra backend.
+- **Estado:** Aplicado.
+- **Ref:** Fase B ejecución.
+
+### R-050: Política de re-verificación de quotas
+- **Qué:** Antigravity tiene límites de API que resetean en minutos. Si se alcanza durante una task, esperar reset antes de reintentar.
+- **Por qué:** Evitar reintentos en loop que empeoran la situación.
+- **Estado:** Documentado (ocurrió en Task 8).
+- **Ref:** Task 8 ejecución.
+
+### R-051: Deuda técnica post-MVP (registro acumulado)
+- **Qué:** Diferidos a post-MVP: aria-label exhaustivo, mapeo de errores Web Speech API, spinner de recarga en background, aria-invalid, maxLength, mailto:, normalización de teléfonos.
+- **Por qué:** MVP primero. Pulido después.
+- **Estado:** Documentado en progress.md de Fase B.
+- **Ref:** Tasks 1-8.
+
 ---
 
 ## Notas de Auditoría (Observaciones)
@@ -169,7 +407,16 @@ El tooling de búsqueda de texto de Antigravity falló 2 veces durante la migrac
 El agente tiene dificultades escribiendo archivos largos en Windows con PowerShell here-strings. Solución adoptada: usar Set-Content -Encoding UTF8 o el editor nativo del agente.
 
 ### NA-003
-El agente respetó 7+ checkpoints consecutivos durante la migración (repo Steps 1-2, Tareas 1-2, Step 2, Step 3, consolidación de rulings). Cambio de comportamiento positivo respecto de la Iteración 1.
+El agente respetó 20+ checkpoints consecutivos durante Step 2 y Fase B. Cambio de comportamiento consolidado respecto de Iteración 1.
+
+### NA-004
+Antigravity reportó errores de "stream interrupted" durante la consolidación de rulings y Task 8. Recuperables con retry. Monitorear si se repite.
+
+### NA-005
+El subagent-driven-development con Gemini 3.8 Flash genera ~30 subagentes por sesión. Costoso en créditos pero efectivo. Considerar parallelización en sesiones futuras.
+
+### NA-006
+"Killed N subagents" en Antigravity = cleanup normal de la plataforma al superar 20 subagentes en buffer. Sin efecto en repo ni pérdida de trabajo.
 
 ---
 
@@ -179,3 +426,4 @@ El agente respetó 7+ checkpoints consecutivos durante la migración (repo Steps
 |---|---|---|---|
 | 2026-09-14 | Antigravity + Usuario | Creación inicial | Consolidación canónica de R-001..R-016 y NA-001..NA-003 a partir de `progress.md` y auditoría externa. |
 | 2026-09-14 | Antigravity + Usuario | Actualización | Incorporación de R-017 y actualización de R-012 tras verificación de Docker Desktop y 21/21 tests pasando. |
+| 2026-09-15 | Antigravity + Usuario | Actualización | Incorporación de R-018..R-051 y NA-004..NA-006, actualización de NA-003 tras finalización de Fase B (Frontend UI Clientes). |

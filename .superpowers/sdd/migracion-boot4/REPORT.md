@@ -2,10 +2,10 @@
 
 ## Metadata
 - **Fecha de generación:** 2026-09-14 13:05 -03:00
-- **Última actualización:** 2026-09-14 14:58 -03:00
+- **Última actualización:** 2026-09-15
 - **Rama:** `feat/migracion-spring-boot-4`
 - **Commits incluidos (hash corto):** Base `f8bd36e`, consolidado `87346f8` (`chore(migration): upgrade to Spring Boot 4.1.1 with modular starters`).
-- **Estado:** Completado. 21/21 tests pasando.
+- **Estado:** Completado (Fase B UI también completada).
 
 ## Resumen ejecutivo (máx 10 líneas)
 Se realizó la migración del backend de SGCH 2.0 desde Spring Boot 3.5.9 a Spring Boot 4.1.1 con arquitectura modular, Jackson 3 y Testcontainers BOM 2.0.5.
@@ -149,6 +149,33 @@ Para el detalle completo de justificaciones técnicas, causa raíz y notas de au
 - **Warnings de compilación:** 0 (`clean test-compile` OK).
 - **Archivos modificados:** 4 archivos de código/config (`backend/pom.xml`, `application.yml`, `ClienteControllerTest.java`, `ClienteRepositoryTest.java`) y documentación en `.superpowers/`.
 - **Líneas netas cambiadas en código:** +92 / -58 según `git diff HEAD~1..HEAD --shortstat`.
+
+## Fase B — UI de Clientes
+
+- **Tasks ejecutadas:** 9 tasks completadas (Tasks 0 a 8) bajo estricto TDD y Conventional Commits:
+  - Task 0: Configuración de Vitest con jsdom y jest-dom.
+  - Task 1: Componente de layout base `AppLayout`.
+  - Task 2: Tipos unificados y cliente HTTP nativo `apiFetch` con clase `ApiError` para RFC 7807; eliminación de `clienteService.ts`.
+  - Task 3: `ClientesPage`, `ClienteList` con 4 estados explícitos (loading, empty, error con reintento, data) y reemplazo de `App.tsx`.
+  - Task 4 / 4.5: `ClienteDetail` con formateo de fechas en castellano rioplatense, link `tel:` defensivo y botón de operaciones deshabilitado; eliminación de `ClienteTable.tsx`.
+  - Task 5: `ClienteForm` con validación de 13 campos, layout centrado, guard contra doble submit; eliminación de `ClienteModal.tsx` y desinstalación completa de `axios`.
+  - Task 6 / 6.5: `MobileCopilot` con dictado por voz real vía Web Speech API (`es-AR`), manejo de eventos ("Ofrece", "Busca", "No Atendió" preservando notas según R-040), SVG inline, elevación de estado a `ClientesPage` y vista de error con reintento.
+  - Task 7: Edición de clientes en `ClienteForm` con método PUT, pre-llenado y navegación integrada.
+  - Task 8: Componente accesible `Toast` con auto-dismiss de 3000ms y unificación de notificaciones visuales en `ClientesPage`.
+- **Tests pasando:** 75 / 75 tests de frontend pasando en Vitest (9 archivos de prueba), 0 fallos, 0 warnings de `act(...)`. Compilación de producción (`tsc -b && vite build`) limpia sin errores ni warnings.
+- **Arquitectura:**
+  - Patrón Master-Detail en escritorio ("Radar Dividido") coexistiendo responsivamente con Mobile Copilot para teléfonos de campo vía clases Tailwind (`hidden md:block` / `md:hidden`).
+  - Navegación pura por estado local en `ClientesPage` (`useState<Vista>`), sin React Router ni librerías externas de UI o íconos.
+  - Elevación de estado de clientes a `ClientesPage` como única fuente de verdad, desacoplando la presentación de los efectos de red.
+- **Eliminación de código heredado de Iteración 1:**
+  - Reemplazo completo de `App.tsx` (reducido de 202 líneas a ~15 líneas limpias) y `App.test.tsx`.
+  - Eliminación física de archivos obsoletos de la iteración 1: `ClienteTable.tsx`, `ClienteModal.tsx`, `clienteService.ts`.
+  - Desinstalación total de `axios`, migrando todas las llamadas HTTP a `fetch` nativo del navegador con tipado seguro y manejo de RFC 7807.
+- **Deuda técnica post-MVP registrada (R-051):**
+  - Accesibilidad exhaustiva: atributos `aria-invalid` y `aria-describedby` en inputs con error de `ClienteForm`.
+  - Web Speech API: mapeo granular de códigos de error nativos (`not-allowed`, `no-speech`, `network`, `aborted`) a mensajes amigables para el usuario.
+  - Feedback visual no bloqueante: indicador sutil o spinner en segundo plano en `ClienteList` durante revalidaciones para no reemplazar la lista existente.
+  - Validaciones adicionales en formulario: límites `maxLength`, enlaces `mailto:` y sanitización/normalización de formato telefónico.
 
 ## Próximos pasos sugeridos
 1. Proceder al desarrollo de la interfaz de usuario completa para Clientes en el frontend (formulario, tabla, validaciones).
