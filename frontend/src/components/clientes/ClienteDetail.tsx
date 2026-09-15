@@ -12,6 +12,12 @@ const calificacionStyles: Record<CalificacionCliente, string> = {
   C: 'bg-amber-100 text-amber-800 border-amber-300',
 };
 
+function formatDate(dateStr?: string | null): string {
+  if (!dateStr) return 'Sin registro';
+  const d = dateStr.includes('T') ? new Date(dateStr) : new Date(`${dateStr}T00:00:00`);
+  return isNaN(d.getTime()) ? 'Sin registro' : d.toLocaleDateString('es-AR');
+}
+
 export function ClienteDetail({ cliente, onVolver, onEditar }: ClienteDetailProps) {
   return (
     <div className="space-y-6">
@@ -66,7 +72,14 @@ export function ClienteDetail({ cliente, onVolver, onEditar }: ClienteDetailProp
           <dl className="grid grid-cols-1 gap-3 text-sm">
             <div>
               <dt className="text-gray-500 font-medium">Teléfono</dt>
-              <dd className="text-gray-900 mt-0.5">{cliente.telefono}</dd>
+              <dd className="text-gray-900 mt-0.5">
+                <a
+                  href={'tel:' + cliente.telefono.replace(/[^0-9+]/g, '')}
+                  className="text-blue-600 hover:underline"
+                >
+                  {cliente.telefono}
+                </a>
+              </dd>
             </div>
             <div>
               <dt className="text-gray-500 font-medium">Email</dt>
@@ -101,18 +114,14 @@ export function ClienteDetail({ cliente, onVolver, onEditar }: ClienteDetailProp
               <dt className="text-gray-500 font-medium">Formas de Pago Preferidas</dt>
               <dd className="text-gray-900 mt-0.5">{cliente.formasPagoPreferidas || 'No especificado'}</dd>
             </div>
-            {cliente.fechaUltimaOperacion && (
-              <div>
-                <dt className="text-gray-500 font-medium">Fecha de Última Operación</dt>
-                <dd className="text-gray-900 mt-0.5">{cliente.fechaUltimaOperacion}</dd>
-              </div>
-            )}
-            {cliente.fechaUltimoContacto && (
-              <div>
-                <dt className="text-gray-500 font-medium">Fecha de Último Contacto</dt>
-                <dd className="text-gray-900 mt-0.5">{cliente.fechaUltimoContacto}</dd>
-              </div>
-            )}
+            <div>
+              <dt className="text-gray-500 font-medium">Fecha de Última Operación</dt>
+              <dd className="text-gray-900 mt-0.5">{formatDate(cliente.fechaUltimaOperacion)}</dd>
+            </div>
+            <div>
+              <dt className="text-gray-500 font-medium">Fecha de Último Contacto</dt>
+              <dd className="text-gray-900 mt-0.5">{formatDate(cliente.fechaUltimoContacto)}</dd>
+            </div>
           </dl>
         </div>
       </div>

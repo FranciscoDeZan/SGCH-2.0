@@ -56,8 +56,41 @@ describe('ClienteDetail', () => {
     // Observaciones
     expect(screen.getByText('Cliente de confianza desde 2018. Cumple plazos.')).toBeInTheDocument();
     // Fechas
-    expect(screen.getByText('2026-02-20')).toBeInTheDocument();
-    expect(screen.getByText('2026-03-10')).toBeInTheDocument();
+    expect(screen.getByText('20/2/2026')).toBeInTheDocument();
+    expect(screen.getByText('10/3/2026')).toBeInTheDocument();
+  });
+
+  it('renders phone as a tel: link with digits and plus preserved', () => {
+    render(
+      <ClienteDetail
+        cliente={mockClienteCompleto}
+        onVolver={mockOnVolver}
+        onEditar={mockOnEditar}
+      />
+    );
+
+    const phoneLink = screen.getByRole('link', { name: '+54 9 341 555-4321' });
+    expect(phoneLink).toBeInTheDocument();
+    expect(phoneLink).toHaveAttribute('href', 'tel:+5493415554321');
+  });
+
+  it('renders "Sin registro" when dates are missing', () => {
+    const clienteSinFechas: Cliente = {
+      nombreRazonSocial: 'La Querencia',
+      telefono: '123456',
+      direccion: 'Ruta 5',
+    };
+
+    render(
+      <ClienteDetail
+        cliente={clienteSinFechas}
+        onVolver={mockOnVolver}
+        onEditar={mockOnEditar}
+      />
+    );
+
+    const sinRegistroList = screen.getAllByText('Sin registro');
+    expect(sinRegistroList.length).toBeGreaterThanOrEqual(2);
   });
 
   it('renders button "Registrar Operación" as disabled with title="Próximamente"', () => {
