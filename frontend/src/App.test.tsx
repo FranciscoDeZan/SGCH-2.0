@@ -7,8 +7,9 @@ vi.mock('./api/client', () => ({
 }));
 
 describe('App', () => {
-  it('renders AppLayout and ClientesPage without crashing', () => {
+  it('renders AppLayout and ClientesPage without crashing', async () => {
     render(<App />);
     expect(screen.getByText('SGCH v2')).toBeInTheDocument();
+    expect(await screen.findByText('Clientes')).toBeInTheDocument();
   });
 });

@@ -106,4 +106,34 @@ describe('ClienteList', () => {
       await screen.findByText('No se pudo conectar. Revisá tu conexión a internet.')
     ).toBeInTheDocument();
   });
+
+  it('re-fetches clients when clicking Reintentar in error state', async () => {
+    vi.mocked(client.apiFetch)
+      .mockRejectedValueOnce(new Error('Network error'))
+      .mockResolvedValueOnce([
+        {
+          id: '1',
+          nombreRazonSocial: 'Estancia La Paz',
+          telefono: '123456',
+          direccion: 'Ruta 1',
+        },
+      ]);
+
+    render(
+      <ClienteList
+        onSelectCliente={mockOnSelectCliente}
+        onNuevoCliente={mockOnNuevoCliente}
+      />
+    );
+
+    expect(
+      await screen.findByText('No se pudo conectar. Revisá tu conexión a internet.')
+    ).toBeInTheDocument();
+
+    const retryButton = screen.getByRole('button', { name: /reintentar/i });
+    fireEvent.click(retryButton);
+
+    expect(await screen.findByText('Estancia La Paz')).toBeInTheDocument();
+    expect(client.apiFetch).toHaveBeenCalledTimes(2);
+  });
 });
