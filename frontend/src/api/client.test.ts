@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   apiFetch,
+  ApiError,
   getClientes,
   getClienteById,
   createCliente,
@@ -108,15 +109,75 @@ describe('apiFetch & client service', () => {
       expect(result).toBeUndefined();
     });
 
-    it('throws an error if response is not ok', async () => {
+    it('throws ApiError with status=400 and parsed JSON body on 400 response', async () => {
+      const errorBody = { title: 'Bad Request', detail: 'Invalid data', errores: { telefono: 'Obligatorio' } };
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: () => Promise.resolve(errorBody),
+      });
+
+      try {
+        await apiFetch('/invalid');
+        expect.unreachable('Should have thrown ApiError');
+      } catch (err) {
+        expect(err).toBeInstanceOf(ApiError);
+        const apiErr = err as ApiError;
+        expect(apiErr.status).toBe(400);
+        expect(apiErr.statusText).toBe('Bad Request');
+        expect(apiErr.data).toEqual(errorBody);
+      }
+    });
+
+    it('throws ApiError with status=404 and data=null on 404 response without body', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 404,
         statusText: 'Not Found',
-        text: () => Promise.resolve('Resource not found'),
+        json: () => Promise.reject(new Error('No body')),
       });
 
-      await expect(apiFetch('/not-found')).rejects.toThrow('API error: 404 Not Found - Resource not found');
+      try {
+        await apiFetch('/not-found');
+        expect.unreachable('Should have thrown ApiError');
+      } catch (err) {
+        expect(err).toBeInstanceOf(ApiError);
+        const apiErr = err as ApiError;
+        expect(apiErr.status).toBe(404);
+        expect(apiErr.data).toBeNull();
+      }
+    });
+
+    it('throws ApiError with status=500 and data=null on 500 response with non-JSON body', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        json: () => Promise.reject(new SyntaxError('Unexpected token < in JSON')),
+      });
+
+      try {
+        await apiFetch('/server-error');
+        expect.unreachable('Should have thrown ApiError');
+      } catch (err) {
+        expect(err).toBeInstanceOf(ApiError);
+        const apiErr = err as ApiError;
+        expect(apiErr.status).toBe(500);
+        expect(apiErr.data).toBeNull();
+      }
+    });
+
+    it('resolves normal JSON on 200 OK without regression', async () => {
+      const mockData = { message: 'success' };
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve(JSON.stringify(mockData)),
+      });
+
+      const res = await apiFetch('/test-ok');
+      expect(res).toEqual(mockData);
     });
   });
 

@@ -1,5 +1,19 @@
 import type { Cliente } from '../types/cliente';
 
+export class ApiError extends Error {
+  status: number;
+  statusText: string;
+  data?: any;
+
+  constructor(status: number, statusText: string, data?: any) {
+    super(`API error: ${status} ${statusText}`);
+    this.name = 'ApiError';
+    this.status = status;
+    this.statusText = statusText;
+    this.data = data;
+  }
+}
+
 /**
  * Base API fetch wrapper using native fetch.
  * Automatically prepends '/api' and includes default JSON headers.
@@ -20,10 +34,8 @@ export async function apiFetch<T>(endpoint: string, options?: RequestInit): Prom
   });
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => '');
-    throw new Error(
-      `API error: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`
-    );
+    const data = await response.json().catch(() => null);
+    throw new ApiError(response.status, response.statusText, data);
   }
 
   if (response.status === 204) {
