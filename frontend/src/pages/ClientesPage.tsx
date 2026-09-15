@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Cliente } from '../types/cliente';
 import { ClienteList } from '../components/clientes/ClienteList';
+import { ClienteDetail } from '../components/clientes/ClienteDetail';
 
 export type Vista = 'lista' | 'detalle' | 'alta' | 'edicion';
 
@@ -20,7 +21,16 @@ export function ClientesPage() {
     );
   }
 
+  if (vista === 'detalle' && selectedCliente) {
+    return (
+      <ClienteDetail
+        cliente={selectedCliente}
+        onVolver={() => setVista('lista')}
+        onEditar={() => setVista('edicion')}
+      />
+    );
+  }
+
   // TODO: Implementar en próximas tasks
-  void selectedCliente;
   return <div className="p-4">En construcción</div>;
 }
