@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Cliente } from '../types/cliente';
 import { ClienteList } from '../components/clientes/ClienteList';
 import { ClienteDetail } from '../components/clientes/ClienteDetail';
+import { ClienteForm } from '../components/clientes/ClienteForm';
 
 export type Vista = 'lista' | 'detalle' | 'alta' | 'edicion';
 
@@ -46,6 +47,18 @@ export function ClientesPage({ initialVista = 'lista', initialSelectedCliente = 
         cliente={selectedCliente}
         onVolver={() => setVista('lista')}
         onEditar={() => setVista('edicion')}
+      />
+    );
+  }
+
+  if (vista === 'alta') {
+    return (
+      <ClienteForm
+        onSuccess={(nuevoCliente: Cliente) => {
+          setSelectedCliente(nuevoCliente);
+          setVista('detalle');
+        }}
+        onCancel={() => setVista('lista')}
       />
     );
   }
