@@ -90,4 +90,19 @@ describe('ClientesPage', () => {
 
     expect(screen.getByRole('heading', { level: 2, name: 'Nuevo Cliente' })).toBeInTheDocument();
   });
+
+  it('renders both MobileCopilot (md:hidden) and ClienteList (hidden md:block) for responsive coexistence in vista lista', async () => {
+    vi.mocked(client.apiFetch).mockResolvedValue([]);
+
+    const { container } = render(<ClientesPage initialVista="lista" />);
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Tareas de Hoy' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Clientes' })).toBeInTheDocument();
+
+    const mobileContainer = container.querySelector('.md\\:hidden');
+    const desktopContainer = container.querySelector('.hidden.md\\:block');
+
+    expect(mobileContainer).toBeInTheDocument();
+    expect(desktopContainer).toBeInTheDocument();
+  });
 });

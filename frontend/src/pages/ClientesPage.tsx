@@ -3,6 +3,7 @@ import type { Cliente } from '../types/cliente';
 import { ClienteList } from '../components/clientes/ClienteList';
 import { ClienteDetail } from '../components/clientes/ClienteDetail';
 import { ClienteForm } from '../components/clientes/ClienteForm';
+import { MobileCopilot } from '../components/clientes/MobileCopilot';
 
 export type Vista = 'lista' | 'detalle' | 'alta' | 'edicion';
 
@@ -14,16 +15,37 @@ export interface ClientesPageProps {
 export function ClientesPage({ initialVista = 'lista', initialSelectedCliente = null }: ClientesPageProps = {}) {
   const [vista, setVista] = useState<Vista>(initialVista);
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(initialSelectedCliente);
+  const [copilotFeedback, setCopilotFeedback] = useState<string | null>(null);
 
   if (vista === 'lista') {
     return (
-      <ClienteList
-        onSelectCliente={(c: Cliente) => {
-          setSelectedCliente(c);
-          setVista('detalle');
-        }}
-        onNuevoCliente={() => setVista('alta')}
-      />
+      <div className="space-y-4">
+        {copilotFeedback && (
+          <div
+            role="status"
+            className="p-3 bg-green-50 border border-green-200 text-green-800 text-sm rounded-md"
+          >
+            {copilotFeedback}
+          </div>
+        )}
+        <div className="md:hidden">
+          <MobileCopilot
+            onActionSuccess={(msg) => {
+              setCopilotFeedback(msg);
+              setTimeout(() => setCopilotFeedback(null), 3000);
+            }}
+          />
+        </div>
+        <div className="hidden md:block">
+          <ClienteList
+            onSelectCliente={(c: Cliente) => {
+              setSelectedCliente(c);
+              setVista('detalle');
+            }}
+            onNuevoCliente={() => setVista('alta')}
+          />
+        </div>
+      </div>
     );
   }
 
