@@ -1,12 +1,14 @@
 # DOCUMENTO DE REQUERIMIENTOS - SGCH v2
 **Sistema de Gestión para Consignatarios de Haciendas**
 
-**Versión:** 3.0 (unificada, canónica)
+**Versión:** 3.1 (unificada, canónica)
 **Fecha:** 2026-09-15
 **Autor:** Francisco De Zan (con auditoría técnica asistida)
 **Estado:** CANÓNICA. Reemplaza a:
 - `DOCUMENTO DE REQUERIMIENTOS - SGCH v2.md` (deprecado, numeración RF01-RF19)
 - `DOCUMENTO DE REQUERIMIENTOS - SGCH v2 (Revisado y Consolidado).md` (deprecado, numeración RF01-RF20)
+**Anexos:**
+- `ANEXO-II-Modelo-Calculo-Fiscal.md` (Modelo de Cálculo Fiscal y Comisiones)
 
 Cualquier referencia a "RF-XX" en prompts, código, tests o rulings se resuelve contra **este** documento.
 
@@ -74,7 +76,7 @@ El SGCH v2 evoluciona de un prototipo académico (v1) a una herramienta de uso d
 | **ID** | **Requerimiento** | **Descripción y Criterios de Aceptación** |
 | :--- | :--- | :--- |
 | **RF05** | **Registro Detallado de Operaciones** | Registro de operaciones de compra y venta con los campos del Anexo I (Modelo de Datos). Incluye:<br>- **Datos Generales:** Fecha de carga, Comprador, Vendedor, Categoría (faena/invernada/reproducción), Subcategoría.<br>- **Datos Económicos:** Kilogramos, Precio por kg, Tipo de Precio (más IVA / final), Porcentaje Facturado, Comisión, Forma de Pago, Plazo.<br>- **Detalle de la Carga:** Raza, Color, Puntuación, Destino, Cantidad de Machos/Hembras, Terneros, Observaciones.<br>**Criterio:** La operación se registra, se vincula a los clientes y actualiza sus historiales. RN02 (carga diferida) aplica. |
-| **RF06** | **Cálculo Automático de IVA y Precios** | **Funcionalidad clave.** Si el tipo de precio es "más IVA", el sistema solicita el **porcentaje facturado** (ej. 60%) y calcula:<br>- Subtotal = kg × precio/kg<br>- IVA = subtotal × 21% × (porcentaje facturado / 100)<br>- Precio Final = subtotal + IVA<br>Si el precio es "final", muestra el desglose (subtotal + IVA) para transparencia.<br>**Criterio:** El sistema muestra siempre el desglose completo del precio. |
+| **RF06** | **Cálculo Automático de IVA y Comisiones** | El sistema calcula automáticamente el desglose financiero de cada operación en 3 capas: valorización económica, liquidación fiscal, saldos por contraparte. El cálculo contempla IVA ganado (10.5%), IVA comisión (21% bilateral), condición fiscal del vendedor (Monotributo vs Responsable Inscripto), y modalidad de precio (neto + IVA vs precio final). **El detalle completo de fórmulas, casos de borde y ejemplos está en Anexo II — Modelo de Cálculo Fiscal y Comisiones (docs/superpowers/specs/ANEXO-II-Modelo-Calculo-Fiscal.md).**<br>**Criterio:** El sistema muestra siempre el desglose completo del precio por concepto (subtotal ganado, IVA ganado, comisión vendedor, comisión comprador, IVA comisiones, totales por contraparte). |
 | **RF07** | **Copiar Operación (Campo a Campo)** | Al registrar una nueva operación, el operador puede seleccionar una operación anterior y **copiar automáticamente todos sus datos** (clientes, categoría, raza, etc.) en el nuevo formulario, para luego solo modificar lo necesario. Botón explícito "Copiar de operación".<br>**Criterio:** El formulario se autocompleta con los datos de la operación seleccionada. |
 | **RF08** | **Desagregar Operaciones por Cliente** | En la ficha del cliente, todas sus operaciones se listan con columnas: fecha, tipo (compra/venta), categoría, kg, precio, monto total, estado de liquidación. Filtros por fecha, categoría, rango de monto. Paginada, ordenable y exportable.<br>**Criterio:** El operador puede ver y analizar rápidamente el historial de operaciones de un cliente. |
 | **RF09** | **Gestión de Estados de Liquidación y Cobranzas** | El sistema permite registrar **pagos parciales** de una operación. Al hacerlo, actualiza automáticamente:<br>- Saldo Pendiente.<br>- Estado de Liquidación (Pendiente / Parcialmente pagado / Liquidado — RN06).<br>**Criterio:** Se genera una alerta cuando un pago está próximo a vencer o vencido. El estado financiero es visible en el dashboard y en la ficha del cliente. |
@@ -176,6 +178,7 @@ El SGCH v2 evoluciona de un prototipo académico (v1) a una herramienta de uso d
 | Tipo de Hacienda | Texto | No | Ej. "Novillos", "Vaquillonas". |
 | Formas de Pago Preferidas | Texto | No | |
 | Observaciones | Texto largo | No | |
+| Condición Fiscal | Select (RI / Monotributo / Exento / Consumidor Final) | No | Default: Responsable Inscripto. Determina alícuota de IVA ganado. |
 
 ### 6.2. Entidad: Operación
 
@@ -189,8 +192,14 @@ El SGCH v2 evoluciona de un prototipo académico (v1) a una herramienta de uso d
 | Kilogramos | Número | Sí | |
 | Precio por kg | Número | Sí | |
 | Tipo de Precio | Select | Sí | "Más IVA" o "Final". |
-| Porcentaje Facturado | Número (0-100) | Condicional | Obligatorio si el tipo es "Más IVA". |
-| Comisión | Número | No | |
+| Precio es Final | Booleano | Sí | Default false (neto + IVA). Si true, el precio_kg ingresado ya incluye IVA y se desglosa hacia atrás. |
+| Comisión % Vendedor | Número (0-100) | No | Default 0. Si >0, se deduce al vendedor. |
+| Comisión % Comprador | Número (0-100) | No | Default 0. Si >0, se recarga al comprador. |
+| Condición Fiscal Vendedor (snapshot) | Select | Sí | Snapshot al momento de la operación. Preserva historia contable si el cliente cambia de condición. |
+| % Facturado Ganado | Número (0-100) | No | Default 100. Controla formalidad del IVA ganado. |
+| % Facturado Comisión Vendedor | Número (0-100) | No | Default 100. Controla formalidad del IVA comisión vendedor. |
+| % Facturado Comisión Comprador | Número (0-100) | No | Default 100. Controla formalidad del IVA comisión comprador. |
+| Estado Liquidación | Select (Pendiente / Parcialmente pagado / Liquidado) | Sí | Default Pendiente. Ver RN06. |
 | Forma de Pago | Texto | Sí | |
 | Plazo | Texto | No | |
 | Raza | Select | No | Brangus, Colorado, Negro, Braford, Definido, Varios. |
@@ -310,6 +319,12 @@ Si en algún chat, commit, ruling o test aparecen referencias a "RF-XX" del doc 
 - **§9.2:** Anexo de buenas prácticas SENASA/TRAZA, usabilidad, CRM agro (no existía).
 - **§10:** Sección de trazabilidad y mapeo (no existía).
 
+### 10.4. Cambios en v3.1
+
+- RF06 reformulado; detalle movido a Anexo II.
+- Cliente: campo `condicionFiscal`.
+- Operación: 8 campos nuevos; 2 removidos (`Comisión`, `Porcentaje Facturado`) reemplazados por campos bilaterales/independientes.
+
 ---
 
 **Fin del documento.**
@@ -317,4 +332,4 @@ Si en algún chat, commit, ruling o test aparecen referencias a "RF-XX" del doc 
 **Historial de versiones:**
 - v1.0 (2025-XX-XX): versión inicial del doc original.
 - v2.0 (2026-XX-XX): versión "Revisada y Consolidada".
-- **v3.0 (2026-09-15): versión unificada canónica. Reemplaza a las anteriores.**
+- **v3.1 (2026-09-15): versión unificada canónica. Reemplaza a las anteriores.**
