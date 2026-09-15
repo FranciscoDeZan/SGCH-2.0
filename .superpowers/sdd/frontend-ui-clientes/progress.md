@@ -11,3 +11,4 @@ Deuda técnica post-MVP registrada de Task 5: atributos maxLength en inputs y ac
 Deuda técnica post-MVP registrada de Task 6: Mapeo de errores Web Speech API (not-allowed, no-speech, network, aborted).
 Deuda técnica post-MVP registrada: Spinner de recarga background en lista (ClienteList).
 Task 6.5: complete (fix(ui): stop mic on action, render error state, cleanup callbacks)
+Task 7: complete (feat(ui): support editing existing clients in ClienteForm)

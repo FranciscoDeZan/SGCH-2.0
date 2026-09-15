@@ -84,6 +84,74 @@ describe('ClienteForm', () => {
     expect(screen.getByLabelText(/fecha de último contacto/i)).toHaveValue('2026-02-10');
   });
 
+  it('submits form with initialData using PUT /clientes/{id} and invokes onSuccess', async () => {
+    const existingCliente: Cliente = {
+      id: 'c123',
+      nombreRazonSocial: 'Estancia La Campana',
+      telefono: '3415559876',
+      direccion: 'Ruta 33 Km 12',
+      email: 'lacampana@campo.com',
+      latitud: -33.1,
+      longitud: -61.2,
+      calificacion: 'A',
+      tipoHacienda: 'Cría',
+      formasPagoPreferidas: 'Cheque 30 días',
+      observaciones: 'Pago puntual',
+      fechaUltimaOperacion: '2026-01-15',
+      fechaUltimoContacto: '2026-02-10',
+    };
+
+    const updatedCliente: Cliente = {
+      ...existingCliente,
+      nombreRazonSocial: 'Estancia La Campana Renovada',
+      telefono: '3415550000',
+    };
+
+    vi.mocked(client.apiFetch).mockResolvedValueOnce(updatedCliente);
+
+    render(
+      <ClienteForm
+        initialData={existingCliente}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/nombre \/ razón social \*/i), {
+      target: { value: '  Estancia La Campana Renovada  ' },
+    });
+    fireEvent.change(screen.getByLabelText(/teléfono \*/i), {
+      target: { value: '  3415550000  ' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /guardar cliente/i }));
+
+    await waitFor(() => {
+      expect(client.apiFetch).toHaveBeenCalledTimes(1);
+    });
+
+    expect(client.apiFetch).toHaveBeenCalledWith('/clientes/c123', {
+      method: 'PUT',
+      body: JSON.stringify({
+        id: 'c123',
+        nombreRazonSocial: 'Estancia La Campana Renovada',
+        telefono: '3415550000',
+        direccion: 'Ruta 33 Km 12',
+        email: 'lacampana@campo.com',
+        latitud: -33.1,
+        longitud: -61.2,
+        calificacion: 'A',
+        tipoHacienda: 'Cría',
+        formasPagoPreferidas: 'Cheque 30 días',
+        observaciones: 'Pago puntual',
+        fechaUltimaOperacion: '2026-01-15',
+        fechaUltimoContacto: '2026-02-10',
+      }),
+    });
+
+    expect(mockOnSuccess).toHaveBeenCalledWith(updatedCliente);
+  });
+
   it('calls onCancel when clicking "Cancelar"', () => {
     render(<ClienteForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
 
