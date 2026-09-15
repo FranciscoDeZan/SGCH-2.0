@@ -1,12 +1,12 @@
 import { render, screen } from '@testing-library/react'
 import { vi } from 'vitest'
 import App from './App'
-import * as clienteService from './api/clienteService'
+import * as client from './api/client'
 
-vi.mock('./api/clienteService')
+vi.mock('./api/client')
 
 test('renders app and client directory successfully', async () => {
-  vi.mocked(clienteService.getClientes).mockResolvedValue([
+  vi.mocked(client.getClientes).mockResolvedValue([
     {
       id: '1',
       nombreRazonSocial: 'Estancia La Ilusión',

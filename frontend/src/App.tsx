@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Cliente } from './types/cliente';
-import { getClientes, createCliente, updateCliente, deleteCliente } from './api/clienteService';
+import { getClientes, createCliente, updateCliente, deleteCliente } from './api/client';
 import { ClienteTable } from './components/ClienteTable';
 import { ClienteModal } from './components/ClienteModal';
 
