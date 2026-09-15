@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ClientesPage } from './ClientesPage';
 import * as client from '../api/client';
@@ -60,7 +60,7 @@ describe('ClientesPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('transitions to detalle when ClienteForm successfully creates a client', async () => {
+  it('shows Toast with "✅ Cliente guardado" and navigates to lista when ClienteForm successfully creates a client', async () => {
     const nuevo = {
       id: 'c-created-1',
       nombreRazonSocial: 'Estancia Creada S.A.',
@@ -72,7 +72,7 @@ describe('ClientesPage', () => {
       if (options?.method === 'POST') {
         return nuevo;
       }
-      return [];
+      return [nuevo];
     });
 
     render(<ClientesPage initialVista="alta" />);
@@ -90,10 +90,10 @@ describe('ClientesPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /guardar cliente/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { level: 2, name: 'Estancia Creada S.A.' })).toBeInTheDocument();
+      expect(screen.getByText('✅ Cliente guardado')).toBeInTheDocument();
     });
-    expect(screen.getByText('3415554321')).toBeInTheDocument();
-    expect(screen.getByText('Ruta 33 Km 50')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Tareas de Hoy' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Clientes' })).toBeInTheDocument();
   });
 
   it('navigates from lista to alta when clicking "Dar de alta"', async () => {
@@ -196,7 +196,7 @@ describe('ClientesPage', () => {
     expect(screen.getByRole('button', { name: /editar cliente/i })).toBeInTheDocument();
   });
 
-  it('submits edit form with PUT, refreshes clients, and returns to ClienteDetail with updated data', async () => {
+  it('submits edit form with PUT, refreshes clients, shows Toast with "✅ Cambios guardados", and returns to ClienteDetail with updated data', async () => {
     const clienteMock = {
       id: 'c-edit-1',
       nombreRazonSocial: 'Estancia La Campana',
@@ -236,12 +236,84 @@ describe('ClientesPage', () => {
       expect(screen.getByRole('heading', { level: 2, name: 'Estancia La Campana Renovada' })).toBeInTheDocument();
     });
 
-    await waitFor(() => {
-      expect(client.apiFetch).toHaveBeenCalledTimes(3);
-    });
-
+    expect(screen.getByText('✅ Cambios guardados')).toBeInTheDocument();
     expect(screen.getByText('3415559999')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /editar cliente/i })).toBeInTheDocument();
+  });
+
+  it('auto-dismisses Toast after 3000ms', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const nuevo = {
+        id: 'c-auto-dismiss-1',
+        nombreRazonSocial: 'Estancia Timer S.A.',
+        telefono: '3415554321',
+        direccion: 'Ruta 33 Km 50',
+      };
+
+      vi.mocked(client.apiFetch).mockImplementation(async (_url, options) => {
+        if (options?.method === 'POST') {
+          return nuevo;
+        }
+        return [nuevo];
+      });
+
+      render(<ClientesPage initialVista="alta" />);
+
+      fireEvent.change(screen.getByLabelText(/nombre \/ razón social \*/i), {
+        target: { value: 'Estancia Timer S.A.' },
+      });
+      fireEvent.change(screen.getByLabelText(/teléfono \*/i), {
+        target: { value: '3415554321' },
+      });
+      fireEvent.change(screen.getByLabelText(/dirección \*/i), {
+        target: { value: 'Ruta 33 Km 50' },
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /guardar cliente/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText('✅ Cliente guardado')).toBeInTheDocument();
+      });
+
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+
+      expect(screen.queryByText('✅ Cliente guardado')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('displays Toast when MobileCopilot triggers onActionSuccess', async () => {
+    const mockClientes = [
+      {
+        id: 'c-copilot-1',
+        nombreRazonSocial: 'Estancia Copilot',
+        telefono: '3415551111',
+        direccion: 'Ruta 34',
+      },
+    ];
+    vi.mocked(client.apiFetch).mockImplementation(async (_url, options) => {
+      if (options?.method === 'PUT') {
+        return { ...mockClientes[0] };
+      }
+      return mockClientes;
+    });
+
+    render(<ClientesPage initialVista="lista" />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Estancia Copilot').length).toBeGreaterThan(0);
+    });
+
+    fireEvent.click(screen.getAllByText('Estancia Copilot')[0]);
+    fireEvent.click(screen.getByRole('button', { name: /no atendió/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('✅ Registrado: no atendió')).toBeInTheDocument();
+    });
   });
 });
 

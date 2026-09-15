@@ -94,7 +94,7 @@ export function MobileCopilot({
     }
   };
 
-  const executeAction = async (payload: Cliente) => {
+  const executeAction = async (payload: Cliente, successMsg: string) => {
     if (isSubmitting) return;
     if (isRecording) {
       try {
@@ -112,13 +112,13 @@ export function MobileCopilot({
       });
       setPutError(null);
       setLastFailedAction(null);
-      onActionSuccess?.('✅ Registrado');
+      onActionSuccess?.(successMsg);
       setDictationText('');
       setActiveCliente(null);
       onRefetch?.();
     } catch {
       setPutError('No se pudo guardar. Reintentá en un momento.');
-      setLastFailedAction(() => () => executeAction(payload));
+      setLastFailedAction(() => () => executeAction(payload, successMsg));
     } finally {
       setIsSubmitting(false);
     }
@@ -133,7 +133,7 @@ export function MobileCopilot({
       ...activeCliente,
       observaciones: newObservaciones,
     };
-    executeAction(payload);
+    executeAction(payload, '✅ Nota guardada');
   };
 
   const handleBusca = () => {
@@ -145,7 +145,7 @@ export function MobileCopilot({
       ...activeCliente,
       observaciones: newObservaciones,
     };
-    executeAction(payload);
+    executeAction(payload, '✅ Nota guardada');
   };
 
   const handleNoAtendio = () => {
@@ -167,7 +167,7 @@ export function MobileCopilot({
       fechaUltimoContacto: new Date().toISOString(),
       observaciones: newObservaciones,
     };
-    executeAction(payload);
+    executeAction(payload, '✅ Registrado: no atendió');
   };
 
   const isActionsDisabled = !activeCliente || isSubmitting;

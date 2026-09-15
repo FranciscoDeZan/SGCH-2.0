@@ -5,6 +5,7 @@ import { ClienteList } from '../components/clientes/ClienteList';
 import { ClienteDetail } from '../components/clientes/ClienteDetail';
 import { ClienteForm } from '../components/clientes/ClienteForm';
 import { MobileCopilot } from '../components/clientes/MobileCopilot';
+import { Toast } from '../components/ui/Toast';
 
 export type Vista = 'lista' | 'detalle' | 'alta' | 'edicion';
 
@@ -31,7 +32,7 @@ function EmptyFallback({ onVolver }: { onVolver: () => void }) {
 export function ClientesPage({ initialVista = 'lista', initialSelectedCliente = null }: ClientesPageProps = {}) {
   const [vista, setVista] = useState<Vista>(initialVista);
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(initialSelectedCliente);
-  const [copilotFeedback, setCopilotFeedback] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -54,89 +55,88 @@ export function ClientesPage({ initialVista = 'lista', initialSelectedCliente = 
     fetchClientes();
   }, [fetchClientes]);
 
-  if (vista === 'lista') {
-    return (
-      <div className="space-y-4">
-        {copilotFeedback && (
-          <div
-            role="status"
-            className="p-3 bg-green-50 border border-green-200 text-green-800 text-sm rounded-md"
-          >
-            {copilotFeedback}
+  const renderContent = () => {
+    if (vista === 'lista') {
+      return (
+        <div className="space-y-4">
+          <div className="md:hidden">
+            <MobileCopilot
+              clientes={clientes}
+              loading={loading}
+              error={error}
+              onRefetch={fetchClientes}
+              onActionSuccess={(msg) => setToastMessage(msg)}
+            />
           </div>
-        )}
-        <div className="md:hidden">
-          <MobileCopilot
-            clientes={clientes}
-            loading={loading}
-            error={error}
-            onRefetch={fetchClientes}
-            onActionSuccess={(msg) => {
-              setCopilotFeedback(msg);
-              setTimeout(() => setCopilotFeedback(null), 3000);
-            }}
-          />
+          <div className="hidden md:block">
+            <ClienteList
+              clientes={clientes}
+              loading={loading}
+              error={error}
+              onSelectCliente={(c: Cliente) => {
+                setSelectedCliente(c);
+                setVista('detalle');
+              }}
+              onNuevoCliente={() => setVista('alta')}
+              onRefetch={fetchClientes}
+            />
+          </div>
         </div>
-        <div className="hidden md:block">
-          <ClienteList
-            clientes={clientes}
-            loading={loading}
-            error={error}
-            onSelectCliente={(c: Cliente) => {
-              setSelectedCliente(c);
-              setVista('detalle');
-            }}
-            onNuevoCliente={() => setVista('alta')}
-            onRefetch={fetchClientes}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  if (vista === 'detalle') {
-    if (!selectedCliente) {
-      return <EmptyFallback onVolver={() => setVista('lista')} />;
+      );
     }
-    return (
-      <ClienteDetail
-        cliente={selectedCliente}
-        onVolver={() => setVista('lista')}
-        onEditar={() => setVista('edicion')}
-      />
-    );
-  }
 
-  if (vista === 'alta') {
-    return (
-      <ClienteForm
-        onSuccess={(nuevoCliente: Cliente) => {
-          fetchClientes();
-          setSelectedCliente(nuevoCliente);
-          setVista('detalle');
-        }}
-        onCancel={() => setVista('lista')}
-      />
-    );
-  }
-
-  if (vista === 'edicion') {
-    if (!selectedCliente) {
-      return <EmptyFallback onVolver={() => setVista('lista')} />;
+    if (vista === 'detalle') {
+      if (!selectedCliente) {
+        return <EmptyFallback onVolver={() => setVista('lista')} />;
+      }
+      return (
+        <ClienteDetail
+          cliente={selectedCliente}
+          onVolver={() => setVista('lista')}
+          onEditar={() => setVista('edicion')}
+        />
+      );
     }
-    return (
-      <ClienteForm
-        initialData={selectedCliente}
-        onSuccess={(updated: Cliente) => {
-          fetchClientes();
-          setSelectedCliente(updated);
-          setVista('detalle');
-        }}
-        onCancel={() => setVista('detalle')}
-      />
-    );
-  }
 
-  // TODO: Implementar en próximas tasks
-  return <div className="p-4">En construcción</div>;
+    if (vista === 'alta') {
+      return (
+        <ClienteForm
+          onSuccess={() => {
+            fetchClientes();
+            setToastMessage('✅ Cliente guardado');
+            setVista('lista');
+          }}
+          onCancel={() => setVista('lista')}
+        />
+      );
+    }
+
+    if (vista === 'edicion') {
+      if (!selectedCliente) {
+        return <EmptyFallback onVolver={() => setVista('lista')} />;
+      }
+      return (
+        <ClienteForm
+          initialData={selectedCliente}
+          onSuccess={(updated: Cliente) => {
+            fetchClientes();
+            setSelectedCliente(updated);
+            setToastMessage('✅ Cambios guardados');
+            setVista('detalle');
+          }}
+          onCancel={() => setVista('detalle')}
+        />
+      );
+    }
+
+    // TODO: Implementar en próximas tasks
+    return <div className="p-4">En construcción</div>;
+  };
+
+  return (
+    <>
+      {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
+      {renderContent()}
+    </>
+  );
 }

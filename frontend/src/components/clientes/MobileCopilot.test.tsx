@@ -129,10 +129,57 @@ describe('MobileCopilot', () => {
       );
     });
 
-    expect(mockOnSuccess).toHaveBeenCalledWith('✅ Registrado');
+    expect(mockOnSuccess).toHaveBeenCalledWith('✅ Nota guardada');
     expect(mockOnRefetch).toHaveBeenCalledTimes(1);
     expect(textarea.value).toBe('');
     expect(screen.getByText('Tocá un cliente primero')).toBeInTheDocument();
+  });
+
+  it('appends [Busca] to observaciones on PUT and calls onActionSuccess with "✅ Nota guardada"', async () => {
+    const mockClientes: Cliente[] = [
+      {
+        id: 'c1',
+        nombreRazonSocial: 'Estancia La Norteña',
+        telefono: '3415551111',
+        direccion: 'Ruta 34 Km 10',
+      },
+    ];
+    const mockOnSuccess = vi.fn();
+    const mockOnRefetch = vi.fn();
+    vi.mocked(client.apiFetch).mockResolvedValueOnce({
+      ...mockClientes[0],
+      observaciones: '[Busca] busca toros Angus',
+    });
+
+    render(
+      <MobileCopilot
+        clientes={mockClientes}
+        onActionSuccess={mockOnSuccess}
+        onRefetch={mockOnRefetch}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Estancia La Norteña'));
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: 'busca toros Angus' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /busca/i }));
+
+    await waitFor(() => {
+      expect(client.apiFetch).toHaveBeenCalledWith(
+        '/clientes/c1',
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify({
+            ...mockClientes[0],
+            observaciones: '[Busca] busca toros Angus',
+          }),
+        })
+      );
+    });
+
+    expect(mockOnSuccess).toHaveBeenCalledWith('✅ Nota guardada');
+    expect(mockOnRefetch).toHaveBeenCalledTimes(1);
   });
 
   // FIX 1: Micrófono toggle + stop()
@@ -241,7 +288,7 @@ describe('MobileCopilot', () => {
     const sentBody = JSON.parse(putCall![1]!.body as string);
     expect(sentBody.fechaUltimoContacto).toBeTruthy();
     expect(sentBody.observaciones).toMatch(/\[No atendió\]/);
-    expect(mockOnSuccess).toHaveBeenCalledWith('✅ Registrado');
+    expect(mockOnSuccess).toHaveBeenCalledWith('✅ Registrado: no atendió');
     expect(mockOnRefetch).toHaveBeenCalledTimes(1);
   });
 
@@ -295,7 +342,7 @@ describe('MobileCopilot', () => {
     expect(sentBody.observaciones).toContain('Llamar después de las 18hs');
     expect(sentBody.observaciones).toContain('[No atendió]');
     expect(sentBody.observaciones).toContain('llamó el hijo pidiendo llamar mañana');
-    expect(mockOnSuccess).toHaveBeenCalledWith('✅ Registrado');
+    expect(mockOnSuccess).toHaveBeenCalledWith('✅ Registrado: no atendió');
     expect(mockOnRefetch).toHaveBeenCalledTimes(1);
     expect(textarea.value).toBe('');
   });

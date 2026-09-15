@@ -12,3 +12,4 @@ Deuda técnica post-MVP registrada de Task 6: Mapeo de errores Web Speech API (n
 Deuda técnica post-MVP registrada: Spinner de recarga background en lista (ClienteList).
 Task 6.5: complete (fix(ui): stop mic on action, render error state, cleanup callbacks)
 Task 7: complete (feat(ui): support editing existing clients in ClienteForm)
+Task 8: complete (feat(ui): add Toast notification component with auto-dismiss)
