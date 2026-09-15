@@ -248,8 +248,8 @@ describe('ClienteForm', () => {
         telefono: '12345678',
         direccion: 'Camino Rural s/n',
         email: undefined,
-        latitud: null,
-        longitud: null,
+        latitud: undefined,
+        longitud: undefined,
         calificacion: undefined,
         tipoHacienda: undefined,
         formasPagoPreferidas: undefined,
@@ -413,5 +413,103 @@ describe('ClienteForm', () => {
     await waitFor(() => {
       expect(mockOnSuccess).toHaveBeenCalled();
     });
+  });
+
+  it('prevents double submission on rapid clicks', async () => {
+    let resolvePromise: (val: any) => void;
+    const promise = new Promise((resolve) => {
+      resolvePromise = resolve;
+    });
+    vi.mocked(client.apiFetch).mockReturnValueOnce(promise as any);
+
+    render(<ClienteForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
+
+    fireEvent.change(screen.getByLabelText(/nombre \/ razón social \*/i), {
+      target: { value: 'Estancia Sol' },
+    });
+    fireEvent.change(screen.getByLabelText(/teléfono \*/i), {
+      target: { value: '3415551111' },
+    });
+    fireEvent.change(screen.getByLabelText(/dirección \*/i), {
+      target: { value: 'Ruta 9 Km 5' },
+    });
+
+    const submitBtn = screen.getByRole('button', { name: /guardar cliente/i });
+    fireEvent.click(submitBtn);
+    fireEvent.click(submitBtn);
+
+    expect(client.apiFetch).toHaveBeenCalledTimes(1);
+
+    resolvePromise!({ id: 'done' });
+    await waitFor(() => {
+      expect(mockOnSuccess).toHaveBeenCalled();
+    });
+  });
+
+  it('disables Cancelar button and displays "Guardando..." on submit button during submission', async () => {
+    let resolvePromise: (val: any) => void;
+    const promise = new Promise((resolve) => {
+      resolvePromise = resolve;
+    });
+    vi.mocked(client.apiFetch).mockReturnValueOnce(promise as any);
+
+    render(<ClienteForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
+
+    fireEvent.change(screen.getByLabelText(/nombre \/ razón social \*/i), {
+      target: { value: 'Estancia Sol' },
+    });
+    fireEvent.change(screen.getByLabelText(/teléfono \*/i), {
+      target: { value: '3415551111' },
+    });
+    fireEvent.change(screen.getByLabelText(/dirección \*/i), {
+      target: { value: 'Ruta 9 Km 5' },
+    });
+
+    const cancelBtn = screen.getByRole('button', { name: /cancelar/i });
+    const submitBtn = screen.getByRole('button', { name: /guardar cliente/i });
+    expect(cancelBtn).not.toBeDisabled();
+
+    fireEvent.click(submitBtn);
+
+    expect(cancelBtn).toBeDisabled();
+    expect(screen.getByRole('button', { name: /guardando\.\.\./i })).toBeInTheDocument();
+
+    resolvePromise!({ id: 'done' });
+    await waitFor(() => {
+      expect(mockOnSuccess).toHaveBeenCalled();
+    });
+  });
+
+  it('omits latitud and longitud when inputs are empty or whitespace', async () => {
+    vi.mocked(client.apiFetch).mockResolvedValueOnce({ id: 'new-id' });
+
+    render(<ClienteForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
+
+    fireEvent.change(screen.getByLabelText(/nombre \/ razón social \*/i), {
+      target: { value: 'Estancia Sol' },
+    });
+    fireEvent.change(screen.getByLabelText(/teléfono \*/i), {
+      target: { value: '3415551111' },
+    });
+    fireEvent.change(screen.getByLabelText(/dirección \*/i), {
+      target: { value: 'Ruta 9 Km 5' },
+    });
+    fireEvent.change(screen.getByLabelText(/latitud/i), {
+      target: { value: '   ' },
+    });
+    fireEvent.change(screen.getByLabelText(/longitud/i), {
+      target: { value: '' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /guardar cliente/i }));
+
+    await waitFor(() => {
+      expect(client.apiFetch).toHaveBeenCalledTimes(1);
+    });
+
+    const callArgs = vi.mocked(client.apiFetch).mock.calls[0];
+    const sentBody = JSON.parse(callArgs[1]?.body as string);
+    expect(sentBody.latitud).toBeUndefined();
+    expect(sentBody.longitud).toBeUndefined();
   });
 });

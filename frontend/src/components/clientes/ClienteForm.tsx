@@ -65,6 +65,8 @@ export function ClienteForm({ onSuccess, onCancel, initialData }: ClienteFormPro
   };
 
   const executeSubmit = async () => {
+    if (isSubmitting) return;
+
     const validationErrors: Record<string, string> = {};
     if (!formData.nombreRazonSocial.trim()) {
       validationErrors.nombreRazonSocial = 'El nombre o razón social es obligatorio.';
@@ -85,20 +87,19 @@ export function ClienteForm({ onSuccess, onCancel, initialData }: ClienteFormPro
     setGeneralError(null);
     setIsSubmitting(true);
 
+    const latStr = String(formData.latitud ?? '').trim();
+    const lngStr = String(formData.longitud ?? '').trim();
+    const parsedLat = latStr !== '' && !isNaN(Number(latStr)) ? parseFloat(latStr) : undefined;
+    const parsedLng = lngStr !== '' && !isNaN(Number(lngStr)) ? parseFloat(lngStr) : undefined;
+
     const payload: Cliente = {
       ...(initialData?.id ? { id: initialData.id } : {}),
       nombreRazonSocial: formData.nombreRazonSocial.trim(),
       telefono: formData.telefono.trim(),
       direccion: formData.direccion.trim(),
       email: formData.email.trim() || undefined,
-      latitud:
-        formData.latitud !== '' && formData.latitud != null && !isNaN(Number(formData.latitud))
-          ? Number(formData.latitud)
-          : null,
-      longitud:
-        formData.longitud !== '' && formData.longitud != null && !isNaN(Number(formData.longitud))
-          ? Number(formData.longitud)
-          : null,
+      latitud: parsedLat,
+      longitud: parsedLng,
       calificacion: (formData.calificacion as CalificacionCliente) || undefined,
       tipoHacienda: formData.tipoHacienda.trim() || undefined,
       formasPagoPreferidas: formData.formasPagoPreferidas.trim() || undefined,
@@ -166,8 +167,9 @@ export function ClienteForm({ onSuccess, onCancel, initialData }: ClienteFormPro
           </div>
           <button
             type="button"
+            disabled={isSubmitting}
             onClick={() => executeSubmit()}
-            className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-md hover:bg-red-700 transition cursor-pointer self-start sm:self-auto"
+            className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-md hover:bg-red-700 transition cursor-pointer self-start sm:self-auto disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Reintentar
           </button>
@@ -434,8 +436,9 @@ export function ClienteForm({ onSuccess, onCancel, initialData }: ClienteFormPro
         <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
           <button
             type="button"
+            disabled={isSubmitting}
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none transition cursor-pointer"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancelar
           </button>
@@ -444,7 +447,7 @@ export function ClienteForm({ onSuccess, onCancel, initialData }: ClienteFormPro
             disabled={isSubmitting}
             className="px-4 py-2 text-sm font-medium text-white bg-green-700 rounded-md hover:bg-green-800 focus:outline-none transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Guardar Cliente
+            {isSubmitting ? 'Guardando...' : 'Guardar Cliente'}
           </button>
         </div>
       </form>
