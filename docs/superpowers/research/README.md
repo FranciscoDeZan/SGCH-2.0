@@ -21,8 +21,7 @@ audios de entrevistas). Git solo debe ver la capa sanitizada.
 
 `raw/` **no tiene backup en git**. El respaldo se hace con archivo encriptado externo
 (7-Zip AES-256 → OneDrive/Drive privado) mensual o al cierre de cada iteración.
-Último backup: [PENDIENTE — el usuario completa la fecha]
-
+Último backup: 31/10/2026
 ## Acceso por agentes de IA
 
 Antigravity y otros agentes leen `raw/` directamente del filesystem. No hay nada
