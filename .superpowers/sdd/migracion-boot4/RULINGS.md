@@ -78,6 +78,15 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 | **R-053** | Cierre Fase B | — | Estrategia de push + merge para Fase B | Aplicado |
 | **R-054** | Fix 9543c08 | — | Cleanup de TODOs en MVP | Aplicado |
 | **R-055** | Decisión de cierre | — | Conservación vs borrado de ramas feature | Aplicado |
+| **R-056** | Chat 15/09 | — | BigDecimal para dinero y kg | Aprobado |
+| **R-057** | Chat 15/09 | — | PK String UUID para Operacion y Cobro (extiende R-024) | Aprobado |
+| **R-058** | Chat 31/10 | — | BigDecimal para coordenadas (no Double) | Parcial |
+| **R-059** | Chat 15/09 | — | UI de Operaciones en Iteración 2 | Aprobado |
+| **R-060** | Chat 15/09 | — | Cobro en tabla separada | Aprobado |
+| **R-061** | Chat 15/09 + 31/10 | — | Frontend Opción C /api/v1 (ejecutable en I2) | Aprobado |
+| **R-062** | Chat 15/09 | — | Backend /api/v1 en paralelo a legacy | Aprobado |
+| **R-063** | Chat 15/09 | — | Migración V2 única para operaciones y cobros | Aprobado |
+| **R-064** | Chat 15/09 | — | Testcontainers solo en repos; cálculo unitario puro | Aprobado |
 
 ---
 
@@ -422,6 +431,69 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 - **Estado:** Aplicado.
 - **Ref:** Decisión de cierre.
 
+### R-056: BigDecimal para dinero y kg
+- **Qué:** Los montos (precios, comisiones, impuestos) y los kilogramos se modelan con `BigDecimal` en el backend. No se usa `double`/`Double` para aritmética monetaria.
+- **Por qué:** Evitar discrepancias de redondeo en aritmética de punto flotante.
+- **Cita textual del transcript:** "empleando `BigDecimal` para toda métrica de dinero y kilos" (transcript_full.jsonl:2024)
+- **Estado:** Aprobado. Forward-looking (no hay campos monetarios hoy).
+- **Ref:** transcript_full.jsonl:2024, 2027
+
+### R-057: PK String UUID para Operacion y Cobro
+- **Qué:** Las entidades `Operacion` y `Cobro` usan la misma PK que `Cliente`: campo `String id` con `@GeneratedValue(strategy = GenerationType.UUID)`. Extiende R-024.
+- **Por qué:** "Consistencia absoluta en el esquema, en los DTOs y en la gestión de Foreign Keys".
+- **Cita textual del transcript:** "Implementar `Operacion` y `Cobro` utilizando exactamente la misma estrategia de PK que `Cliente`" (transcript_full.jsonl:2026)
+- **Estado:** Aprobado. Forward-looking (entidades no creadas).
+- **Ref:** transcript_full.jsonl:2025, 2026, 2027
+
+### R-058: BigDecimal para coordenadas (no Double)
+- **Qué:** Latitud y longitud se modelan con `BigDecimal` en Java, alineado con las columnas `DECIMAL(10,8)` y `DECIMAL(11,8)` existentes en la tabla `clientes`. No se usa `Double`.
+- **Por qué:** Coherencia con R-056 (todo valor decimal exacto es BigDecimal) y con el tipo `DECIMAL` del SQL. La propuesta previa de mantener `Double` fue descartada por el usuario.
+- **Cita textual:** "Decisión del usuario en chat 2026-10-31 (D1): 'BigDecimal en Java + DECIMAL en SQL'".
+- **Estado:** Aprobado. Parcial: `Cliente.java:48,51` hoy declara `Double`. Deuda técnica a ejecutar como Task 0 de Iteración 2, antes de crear `Operacion` (consistencia entre entidades).
+- **Ref:** chat 2026-10-31 (D1) · transcript_full.jsonl:2028 (propuesta original de Double, descartada)
+
+### R-059: UI de Operaciones en Iteración 2
+- **Qué:** La Iteración 2 incluye el frontend de Operaciones (form, detail, list, mobile, tests), no solo el backend.
+- **Por qué:** "Entregar un 'Core Operativo' sin interfaces es inútil para los operadores y viola el propósito del proyecto y el RNF01".
+- **Cita textual del transcript:** "La UI de Operaciones **debe incluirse obligatoriamente en la Iteración 2**." (transcript_full.jsonl:2026)
+- **Estado:** Aprobado. Forward-looking.
+- **Ref:** transcript_full.jsonl:2025, 2026, 2027, 2028 (lista de tasks)
+
+### R-060: Cobro en tabla separada
+- **Qué:** `Cobro` se modela como tabla independiente con FK a `Operacion`, no como campos embebidos ni colección JPA dentro de `Operacion`.
+- **Por qué:** Cada cobro tiene estado, fecha, medio de pago y observaciones propias. Embebido impide historial completo.
+- **Cita textual del transcript:** "Cobro va en una tabla separada" (transcript_full.jsonl:2025-2026)
+- **Estado:** Aprobado. Forward-looking.
+- **Ref:** transcript_full.jsonl:2025, 2026, 2027
+
+### R-061: Frontend Opción C hacia /api/v1
+- **Qué:** El frontend migra a `/api/v1` de una sola vez, cambiando el fallback central en `apiFetch`. No se implementan helpers versionados ni coexistencia de paths en el cliente. Ejecutable en Iteración 2 (junto con la creación de `/api/v1/operaciones`), no antes.
+- **Por qué:** "Las Opciones A y B ensucian el código con lógicas transicionales innecesarias".
+- **Cita textual:** "Opción C (Cambiar el helper a `/api/v1` y romper legacy de una en el frontend)" (transcript_full.jsonl:2028) + decisión del usuario 2026-10-31 (D2): adoptar en Iteración 2, no ahora.
+- **Estado:** Aprobado. Forward-looking. Ejecutable en I2.
+- **Ref:** transcript_full.jsonl:2027, 2028 · chat 2026-10-31 (D2) · client.ts:17-19 (punto de cambio: ~1 línea)
+
+### R-062: Backend /api/v1 en paralelo a legacy
+- **Qué:** Durante la transición, el backend expone `/api/v1` en paralelo a `/api` legacy. El controlador legacy se mantiene hasta que el frontend esté migrado; luego se remueve.
+- **Por qué:** Permite migrar frontend sin downtime ni romper la compilación del backend.
+- **Cita textual del transcript:** "el *backend* sí mantendrá su controlador legacy brevemente para asegurar que no se rompe la compilación antes de que el frontend esté migrado" (transcript_full.jsonl:2028)
+- **Estado:** Aprobado. Forward-looking.
+- **Ref:** transcript_full.jsonl:2026, 2027, 2028
+
+### R-063: Migración V2 única para operaciones y cobros
+- **Qué:** La creación de `operaciones` y `cobros` se hace en un único archivo Flyway: `V2__create_operaciones_y_cobros.sql`. No se divide en migraciones separadas por entidad.
+- **Por qué:** Ambas entidades tienen FK entre sí (`Cobro.operacion_id`). Una migración única garantiza orden de creación atómico y simplifica rollbacks conceptuales.
+- **Cita textual del transcript:** "un único script `V2__create_operaciones_y_cobros.sql`" (transcript_full.jsonl:2026)
+- **Estado:** Aprobado. Forward-looking.
+- **Ref:** transcript_full.jsonl:2026, 2027
+
+### R-064: Testcontainers solo en repos; cálculo con tests unitarios puros
+- **Qué:** Los tests de repositorio (`*RepositoryTest`) usan Testcontainers + MySQL 8. Los tests de cálculo fiscal y de lógica de negocio (`*ServiceTest`) son unitarios puros, sin Spring context ni Testcontainers.
+- **Por qué:** Testcontainers es lento y costoso; solo aporta valor donde hay SQL real. El cálculo fiscal se testea puro con Mockito.
+- **Cita textual del transcript:** "Testcontainers solo para los tests de repositorio y tests unitarios puros para el cálculo" (transcript_full.jsonl:2026)
+- **Estado:** Aprobado. Forward-looking.
+- **Ref:** transcript_full.jsonl:2026, 2027
+
 ---
 
 ## Notas de Auditoría (Observaciones)
@@ -454,3 +526,4 @@ El subagent-driven-development con Gemini 3.8 Flash genera ~30 subagentes por se
 | 2026-09-14 | Antigravity + Usuario | Actualización | Incorporación de R-017 y actualización de R-012 tras verificación de Docker Desktop y 21/21 tests pasando. |
 | 2026-09-15 | Antigravity + Usuario | Actualización | Incorporación de R-018..R-051 y NA-004..NA-006, actualización de NA-003 tras finalización de Fase B (Frontend UI Clientes). |
 | 2026-09-15 | Antigravity + Usuario | Actualización | Incorporación de R-052..R-055 tras borrado de rama feature y cierre formal de Fase B. |
+| 2026-10-31 | Antigravity + Usuario | Actualización | Incorporación de R-056..R-064 desde decisiones del 15/09 (transcript_full.jsonl) y del 31/10 (chat). Corrección del audit report del 30/10. |
