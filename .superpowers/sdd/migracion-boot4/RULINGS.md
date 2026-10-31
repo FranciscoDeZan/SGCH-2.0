@@ -87,6 +87,10 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 | **R-062** | Chat 15/09 | — | Backend /api/v1 en paralelo a legacy | Aprobado |
 | **R-063** | Chat 15/09 | — | Migración V2 única para operaciones y cobros | Aprobado |
 | **R-064** | Chat 15/09 | — | Testcontainers solo en repos; cálculo unitario puro | Aprobado |
+| **R-065** | Chat 31/10 | — | Split research tracked vs raw gitignored | Aplicado |
+| **R-066** | Chat 31/10 | — | Sanitización de DECISIONES-NEGOCIO.md | Aprobado |
+| **R-067** | Chat 31/10 | — | Backup externo encriptado de raw/ | Aprobado |
+| **R-068** | Chat 31/10 | — | Corrección de reportes del brain antes de cerrar | Aplicado |
 
 ---
 
@@ -494,6 +498,34 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 - **Estado:** Aprobado. Forward-looking.
 - **Ref:** transcript_full.jsonl:2026, 2027
 
+### R-065: Split de research tracked vs raw gitignored
+- **Qué:** El material crudo de investigación (entrevistas, WhatsApp, auditoría técnica con citas, audios `.ogg`, `VISION.md`, `SGCH Resumido.docx`, capturas de planilla) se mueve a `docs/superpowers/research/raw/` y se agrega a `.gitignore`. En `docs/superpowers/research/` (tracked) solo queda material sanitizado (`README.md`, `2026-10-30-auditoria-carpeta.md`, futuro `DECISIONES-NEGOCIO.md`).
+- **Por qué:** Contiene nombres de clientes, márgenes reales y menciones explícitas a evasión y allanamiento. No apto para GitHub ni en repo privado. Los agentes de IA acceden vía filesystem local sin necesidad de que los archivos estén en git.
+- **Cita:** Decisión del usuario 2026-10-31 (chat); ejecución en commit `f5c0e46`.
+- **Estado:** Aplicado.
+- **Ref:** commit f5c0e46 · `.gitignore:9` · `docs/superpowers/research/README.md`
+
+### R-066: Sanitización de `DECISIONES-NEGOCIO.md`
+- **Qué:** El documento `docs/superpowers/research/DECISIONES-NEGOCIO.md` (tracked) contiene decisiones de negocio **sin** nombres reales de clientes (se reemplazan por seudónimos: `Cliente A (criador, Formosa)`), sin valores específicos de márgenes por operación (se usan rangos: "1–5%"), sin las palabras "negro", "evasión" ni "allanamiento" (se usan "porción documentada" / "porción sin comprobante"). Las citas literales y la asociación nombre→decisión quedan exclusivamente en `raw/`.
+- **Por qué:** El archivo tracked es visible para cualquier colaborador o backup de GitHub. La sanitización no pierde información (los datos sensibles viven en `raw/`), solo elimina la exposición innecesaria.
+- **Cita:** Decisión del usuario 2026-10-31 (chat).
+- **Estado:** Aprobado. Forward-looking (el documento se crea en el próximo paso).
+- **Ref:** chat 2026-10-31
+
+### R-067: Backup externo encriptado de `raw/`
+- **Qué:** `raw/` no tiene backup en git. El respaldo es un archivo encriptado externo (7-Zip AES-256 → OneDrive/Drive privado u otro cloud privado), mensual o al cierre de cada iteración. La fecha del último backup se anota en `docs/superpowers/research/README.md`, sección "Backup".
+- **Por qué:** `raw/` contiene la única copia de las entrevistas reales y no debe perderse ante falla de disco. GitHub está descartado por privacidad (R-065).
+- **Cita:** Decisión del usuario 2026-10-31 (chat).
+- **Estado:** Aprobado. Acción del operador.
+- **Ref:** chat 2026-10-31 · `docs/superpowers/research/README.md` sección "Backup"
+
+### R-068: Corrección de reportes del brain antes de cerrar
+- **Qué:** Los reportes generados por Antigravity en `C:\Users\frans\.gemini\antigravity\brain\` se copian a `docs/superpowers/research/` antes de considerarse cerrados. Los `.jsonl` del brain nunca se copian al repo (contienen prefijo de API key de Context7 y toda la sesión). Una corrección reportada como "hecha" en un commit pasado debe verificarse contra el archivo del repo, no contra el reporte.
+- **Por qué:** En commit `ca2be3a` se reportó como corregida la línea 209 del audit report y no se aplicó; el bug se detectó recién al auditar el commit siguiente. La verificación contra el archivo del repo, no contra el reporte, evita repetir el problema.
+- **Cita:** Detectado en commit `ca2be3a`; corregido en `f5c0e46`.
+- **Estado:** Aplicado.
+- **Ref:** commits ca2be3a y f5c0e46
+
 ---
 
 ## Notas de Auditoría (Observaciones)
@@ -527,3 +559,4 @@ El subagent-driven-development con Gemini 3.8 Flash genera ~30 subagentes por se
 | 2026-09-15 | Antigravity + Usuario | Actualización | Incorporación de R-018..R-051 y NA-004..NA-006, actualización de NA-003 tras finalización de Fase B (Frontend UI Clientes). |
 | 2026-09-15 | Antigravity + Usuario | Actualización | Incorporación de R-052..R-055 tras borrado de rama feature y cierre formal de Fase B. |
 | 2026-10-31 | Antigravity + Usuario | Actualización | Incorporación de R-056..R-064 desde decisiones del 15/09 (transcript_full.jsonl) y del 31/10 (chat). Corrección del audit report del 30/10. |
+| 2026-10-31 | Antigravity + Usuario | Actualización | Incorporación de R-065..R-068 desde decisiones del 31/10. R-065 y R-068 aplicados en commit f5c0e46; R-066 y R-067 aprobados como forward-looking. |
