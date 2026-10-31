@@ -206,7 +206,7 @@ Sin `.gitattributes` ni `core.autocrlf` local, la normalización de EOL depende 
 
 **Prioridad alta**
 1. **Decidir qué hacer con el material nuevo de negocio.** `relevamiento_whatsapp…md`, `transcripci_n_completa…md` y `auditoria_tecnica…md` son hoy la única fuente de las respuestas del 28/10 y de las 10 contradicciones, y **no tienen backup en git**. Opciones: moverlos a `docs/superpowers/research/` y trackearlos, o al menos dejar un respaldo fuera de la máquina. Los `.ogg` pueden seguir ignorados.
-2. **Volcar R-056..R-064 a `RULINGS.md`** antes de escribir el plan de Iteración 2. (Hecho en commit <hash>.)
+2. **Volcar R-056..R-064 a `RULINGS.md`** antes de escribir el plan de Iteración 2. (Hecho en commit ca2be3a.)
 3. **Clave de Context7:** pasarla a una variable de entorno o a un gestor de secretos, borrar `Api key .txt` y rotarla si alguna vez estuvo fuera de esta máquina.
 
 **Prioridad media**
