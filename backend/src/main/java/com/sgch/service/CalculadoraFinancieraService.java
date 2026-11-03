@@ -1,6 +1,8 @@
 package com.sgch.service;
 
+import com.sgch.dto.CalculoResultado;
 import com.sgch.model.CondicionFiscal;
+import com.sgch.model.ModalidadCircuito;
 import com.sgch.model.ModalidadPrecio;
 import com.sgch.model.Operacion;
 import org.springframework.stereotype.Service;
@@ -145,8 +147,193 @@ public class CalculadoraFinancieraService {
     }
 
     // =========================================================================
+    // CAPA 3: Saldos por contraparte e integrador (Anexo II §4, R-069, R-070, R-071)
+    // =========================================================================
+
+    public BigDecimal calcularSaldoHaciendaEntrePartes(Operacion op) {
+        if (op == null || op.getModalidadCircuito() == null) {
+            return ZERO_MONEY;
+        }
+        return calcularSaldoHaciendaEntrePartesDesdeCapas(
+                op.getModalidadCircuito(),
+                calcularSubtotalGanado(op),
+                calcularIvaGanado(op)
+        );
+    }
+
+    public BigDecimal calcularSaldoComisionFirma(Operacion op) {
+        if (op == null || op.getModalidadCircuito() == null) {
+            return ZERO_MONEY;
+        }
+        if (op.getModalidadCircuito() == ModalidadCircuito.CONSIGNATARIA_EXTERNA) {
+            return calcularSaldoComisionFirmaDesdeCapas(
+                    op.getModalidadCircuito(),
+                    calcularComisionVendedor(op),
+                    calcularIvaComisionVendedor(op),
+                    ZERO_MONEY,
+                    ZERO_MONEY,
+                    ZERO_MONEY
+            );
+        }
+        return calcularSaldoComisionFirmaDesdeCapas(
+                op.getModalidadCircuito(),
+                calcularComisionVendedor(op),
+                calcularIvaComisionVendedor(op),
+                calcularComisionComprador(op),
+                calcularIvaComisionComprador(op),
+                obtenerMontoExtraONullComoCero(op)
+        );
+    }
+
+    public BigDecimal calcularTotalACobrarComprador(Operacion op) {
+        if (op == null || op.getModalidadCircuito() == null) {
+            return ZERO_MONEY;
+        }
+        return calcularTotalACobrarCompradorDesdeCapas(
+                op.getModalidadCircuito(),
+                calcularComisionComprador(op),
+                calcularIvaComisionComprador(op),
+                obtenerMontoExtraONullComoCero(op)
+        );
+    }
+
+    public BigDecimal calcularTotalAPagarVendedor(Operacion op) {
+        return ZERO_MONEY;
+    }
+
+    public CalculoResultado calcular(Operacion op) {
+        if (op == null) {
+            return new CalculoResultado(
+                    ZERO_MONEY,
+                    ZERO_MONEY,
+                    ZERO_MONEY,
+                    ZERO_MONEY,
+                    ZERO_MONEY,
+                    ZERO_MONEY,
+                    null,
+                    ZERO_MONEY,
+                    ZERO_MONEY,
+                    ZERO_MONEY,
+                    ZERO_MONEY
+            );
+        }
+
+        // Capa 1
+        BigDecimal subtotalGanado = calcularSubtotalGanado(op);
+        BigDecimal comisionVendedorMonto = calcularComisionVendedor(op);
+        BigDecimal comisionCompradorMonto = calcularComisionComprador(op);
+
+        // Capa 2
+        BigDecimal ivaGanado = calcularIvaGanado(op);
+        BigDecimal ivaComisionVendedorMonto = calcularIvaComisionVendedor(op);
+        BigDecimal ivaComisionCompradorMonto = calcularIvaComisionComprador(op);
+
+        // Monto extra informativo (preserva null en el record, usa 0.00 en sumas — R-069)
+        BigDecimal montoExtraRecord = op.getMontoExtraCobradoComprador() != null
+                ? op.getMontoExtraCobradoComprador().setScale(SCALE, ROUNDING_MODE)
+                : null;
+        BigDecimal montoExtraSuma = montoExtraRecord != null ? montoExtraRecord : ZERO_MONEY;
+
+        // Capa 3 reutilizando valores ya calculados de Capa 1 y Capa 2 (fleteMonto y retencionesExternasMonto no participan — D-12, R-080)
+        ModalidadCircuito circuito = op.getModalidadCircuito();
+        BigDecimal saldoHaciendaEntrePartes = calcularSaldoHaciendaEntrePartesDesdeCapas(
+                circuito,
+                subtotalGanado,
+                ivaGanado
+        );
+        BigDecimal saldoComisionFirma = calcularSaldoComisionFirmaDesdeCapas(
+                circuito,
+                comisionVendedorMonto,
+                ivaComisionVendedorMonto,
+                comisionCompradorMonto,
+                ivaComisionCompradorMonto,
+                montoExtraSuma
+        );
+        BigDecimal totalACobrarComprador = calcularTotalACobrarCompradorDesdeCapas(
+                circuito,
+                comisionCompradorMonto,
+                ivaComisionCompradorMonto,
+                montoExtraSuma
+        );
+        BigDecimal totalAPagarVendedor = calcularTotalAPagarVendedor(op);
+
+        return new CalculoResultado(
+                subtotalGanado,
+                comisionVendedorMonto,
+                comisionCompradorMonto,
+                ivaGanado,
+                ivaComisionVendedorMonto,
+                ivaComisionCompradorMonto,
+                montoExtraRecord,
+                saldoHaciendaEntrePartes,
+                saldoComisionFirma,
+                totalACobrarComprador,
+                totalAPagarVendedor
+        );
+    }
+
+    // =========================================================================
     // Helpers privados de cálculo
     // =========================================================================
+
+    private BigDecimal calcularSaldoHaciendaEntrePartesDesdeCapas(
+            ModalidadCircuito circuito,
+            BigDecimal subtotalGanado,
+            BigDecimal ivaGanado
+    ) {
+        if (circuito == null || circuito == ModalidadCircuito.CONSIGNATARIA_EXTERNA) {
+            return ZERO_MONEY;
+        }
+        // DIRECTO y PROPIA (DA-04, R-070)
+        return subtotalGanado.add(ivaGanado).setScale(SCALE, ROUNDING_MODE);
+    }
+
+    private BigDecimal calcularSaldoComisionFirmaDesdeCapas(
+            ModalidadCircuito circuito,
+            BigDecimal comisionVendedor,
+            BigDecimal ivaComisionVendedor,
+            BigDecimal comisionComprador,
+            BigDecimal ivaComisionComprador,
+            BigDecimal montoExtra
+    ) {
+        if (circuito == null) {
+            return ZERO_MONEY;
+        }
+        if (circuito == ModalidadCircuito.CONSIGNATARIA_EXTERNA) {
+            // Comisión neta facturada a la consignataria externa (D-08, R-071)
+            return comisionVendedor.add(ivaComisionVendedor).setScale(SCALE, ROUNDING_MODE);
+        }
+        // DIRECTO y PROPIA (DA-04, R-069)
+        return comisionVendedor
+                .add(ivaComisionVendedor)
+                .add(comisionComprador)
+                .add(ivaComisionComprador)
+                .add(montoExtra)
+                .setScale(SCALE, ROUNDING_MODE);
+    }
+
+    private BigDecimal calcularTotalACobrarCompradorDesdeCapas(
+            ModalidadCircuito circuito,
+            BigDecimal comisionComprador,
+            BigDecimal ivaComisionComprador,
+            BigDecimal montoExtra
+    ) {
+        if (circuito == null || circuito == ModalidadCircuito.CONSIGNATARIA_EXTERNA) {
+            return ZERO_MONEY;
+        }
+        // DIRECTO y PROPIA (DA-04, R-069)
+        return comisionComprador
+                .add(ivaComisionComprador)
+                .add(montoExtra)
+                .setScale(SCALE, ROUNDING_MODE);
+    }
+
+    private BigDecimal obtenerMontoExtraONullComoCero(Operacion op) {
+        if (op == null || op.getMontoExtraCobradoComprador() == null) {
+            return ZERO_MONEY;
+        }
+        return op.getMontoExtraCobradoComprador().setScale(SCALE, ROUNDING_MODE);
+    }
 
     private BigDecimal calcularPorcentajeSobreMonto(BigDecimal base, BigDecimal porcentaje) {
         if (base == null || porcentaje == null || base.compareTo(BigDecimal.ZERO) == 0 || porcentaje.compareTo(BigDecimal.ZERO) == 0) {
