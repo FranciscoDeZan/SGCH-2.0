@@ -104,6 +104,7 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 | **R-079** | Chat 03/11 | — | 3 overrides de IVA (ganado + comisión vendedor + comisión comprador) | Aprobado |
 | **R-080** | Chat 03/11 | — | retenciones_externas_monto nullable, visible solo en CONSIGNATARIA_EXTERNA | Aprobado |
 | **R-081** | Chat 03/11 | — | Login diferido mientras corra en localhost; adelantar en Fase 2.B si se cargan datos reales en entorno accesible | Aprobado |
+| **R-082** | Consolidación 03/11 | — | Las 3 fuentes de verdad de Iteración 2 | Aplicado |
 
 ---
 
@@ -630,6 +631,25 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 - **Estado:** Aprobado. Documentado en Requerimientos v3.2 (§4.3).
 - **Ref:** `DECISIONES-NEGOCIO-DRAFT.md` (`DA-01`, `B6`, `B7`) · R-066
 
+### R-082: Las 3 fuentes de verdad de Iteración 2
+- **Qué:** A partir de la consolidación del 2026-11-03, SGCH 2.0 tiene tres
+  fuentes de verdad con jerarquía explícita:
+  1. **Especificaciones técnicas:** `docs/superpowers/specs/DOCUMENTO DE
+     REQUERIMIENTOS - SGCH v2.md` (v3.2) + `ANEXO-II-Modelo-Calculo-Fiscal.md`
+     (v1.1). Tracked, sin sanitización de nombres de dominio.
+  2. **Decisiones de negocio:** `docs/superpowers/research/DECISIONES-NEGOCIO.md`.
+     Tracked, sanitizado per R-066.
+  3. **Material crudo de investigación:** `docs/superpowers/research/raw/`.
+     Gitignored per R-065, backup encriptado externo per R-067.
+  Cualquier contradicción se resuelve en ese orden. El DRAFT original
+  (`raw/DECISIONES-NEGOCIO-DRAFT.md`) queda como referencia histórica,
+  no como fuente operativa.
+- **Por qué:** Tres niveles permiten auditar decisiones sin exponer datos
+  de clientes en el repo tracked, y sin perder la fuente original cuando
+  se necesita verificar una cita.
+- **Estado:** Aplicado en commit `640fa5a` (specs) + este commit (research).
+- **Ref:** R-065, R-066, R-067 · commit 640fa5a
+
 ---
 
 ## Notas de Auditoría (Observaciones)
@@ -665,3 +685,4 @@ El subagent-driven-development con Gemini 3.8 Flash genera ~30 subagentes por se
 | 2026-10-31 | Antigravity + Usuario | Actualización | Incorporación de R-056..R-064 desde decisiones del 15/09 (transcript_full.jsonl) y del 31/10 (chat). Corrección del audit report del 30/10. |
 | 2026-10-31 | Antigravity + Usuario | Actualización | Incorporación de R-065..R-068 desde decisiones del 31/10. R-065 y R-068 aplicados en commit f5c0e46; R-066 y R-067 aprobados como forward-looking. |
 | 2026-11-03 | Antigravity + Usuario | Actualización | Incorporación de R-069..R-081 tras entrevista con Papá del 03/11 (D-07 a D-14) y aprobación de las 12 decisiones técnicas de Tipo B (B1 a B12). Actualización de Requerimientos a v3.2 y Anexo II a v1.1. |
+| 2026-11-03 | Antigravity + Usuario | Actualización | Incorporación de R-082 (las 3 fuentes de verdad de Iteración 2), publicación de `docs/superpowers/research/DECISIONES-NEGOCIO.md` sanitizado (R-066) y ajuste de `total_a_cobrar_comprador` en Anexo II §4 y RF06 (sobre base commit 640fa5a). |

@@ -107,8 +107,8 @@ Fórmulas por circuito:
 - `saldo_hacienda_entre_partes = subtotal_ganado + iva_ganado`
   (informativo, dispara alerta de seguimiento al operador cuando vence — D-07)
 - `saldo_comision_firma = (comision_vendedor_monto + iva_comision_vendedor_monto) + (comision_comprador_monto + iva_comision_comprador_monto) + monto_extra_cobrado_comprador` (si presente)
-- `total_a_cobrar_comprador = comision_comprador_monto + iva_comision_comprador_monto`
-  (solo la parte de comisión comprador adeudada a la firma)
+- `total_a_cobrar_comprador = comision_comprador_monto + iva_comision_comprador_monto + monto_extra_cobrado_comprador` (si presente)
+  (comisión comprador + su IVA + monto extra informativo adeudado a la firma)
 - `total_a_pagar_vendedor = 0`
   (la firma no le paga al vendedor; el comprador le paga directo)
 
@@ -175,5 +175,5 @@ Notas operativas de Capa 3:
 - **Capa 3:**
   - `saldo_hacienda_entre_partes = $165.750.000,00`
   - `saldo_comision_firma = $7.260.000,00 + $6.000.000,00 = $13.260.000,00`
-  - `total_a_cobrar_comprador = $3.630.000,00` (documentado) + `$6.000.000,00` (`monto_extra_cobrado_comprador` informativo).
+  - `total_a_cobrar_comprador = $3.630.000,00 (comisión) + $6.000.000,00 (monto_extra) = $9.630.000,00`
   - `total_a_pagar_vendedor = $0,00`.
