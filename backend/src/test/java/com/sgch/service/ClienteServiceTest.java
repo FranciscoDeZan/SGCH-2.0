@@ -11,6 +11,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -107,8 +108,8 @@ public class ClienteServiceTest {
         updatedData.setTelefono("3419998888");
         updatedData.setEmail("nuevo@elceibo.com");
         updatedData.setDireccion("Nueva Direccion 123");
-        updatedData.setLatitud(-32.95);
-        updatedData.setLongitud(-60.65);
+        updatedData.setLatitud(new BigDecimal("-32.95"));
+        updatedData.setLongitud(new BigDecimal("-60.65"));
         updatedData.setCalificacion(CalificacionCliente.A);
         updatedData.setTipoHacienda("Invernada");
         updatedData.setFormasPagoPreferidas("Cheque 30 dias");
@@ -120,8 +121,8 @@ public class ClienteServiceTest {
         assertThat(result.getTelefono()).isEqualTo("3419998888");
         assertThat(result.getEmail()).isEqualTo("nuevo@elceibo.com");
         assertThat(result.getDireccion()).isEqualTo("Nueva Direccion 123");
-        assertThat(result.getLatitud()).isEqualTo(-32.95);
-        assertThat(result.getLongitud()).isEqualTo(-60.65);
+        assertThat(result.getLatitud()).isEqualByComparingTo(new BigDecimal("-32.95"));
+        assertThat(result.getLongitud()).isEqualByComparingTo(new BigDecimal("-60.65"));
         assertThat(result.getCalificacion()).isEqualTo(CalificacionCliente.A);
         assertThat(result.getTipoHacienda()).isEqualTo("Invernada");
         assertThat(result.getFormasPagoPreferidas()).isEqualTo("Cheque 30 dias");

@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -154,6 +155,34 @@ public class ClienteControllerTest {
         mockMvc.perform(delete("/api/clientes/1"))
                .andExpect(status().isNoContent());
         verify(clienteService, times(1)).delete("1");
+    }
+
+    @Test
+    public void testCreateClienteWithBigDecimalCoordinatesSuccess() throws Exception {
+        Cliente c = new Cliente();
+        c.setNombreRazonSocial("Agropecuaria El Ceibo");
+        c.setTelefono("3415556677");
+        c.setDireccion("Ruta 34 Km 120");
+        c.setLatitud(new BigDecimal("-31.63332940"));
+        c.setLongitud(new BigDecimal("-60.70000080"));
+
+        Cliente saved = new Cliente();
+        saved.setId("uuid-coords");
+        saved.setNombreRazonSocial("Agropecuaria El Ceibo");
+        saved.setTelefono("3415556677");
+        saved.setDireccion("Ruta 34 Km 120");
+        saved.setLatitud(new BigDecimal("-31.63332940"));
+        saved.setLongitud(new BigDecimal("-60.70000080"));
+
+        when(clienteService.save(any(Cliente.class))).thenReturn(saved);
+
+        mockMvc.perform(post("/api/clientes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(c)))
+               .andExpect(status().isCreated())
+               .andExpect(jsonPath("$.id").value("uuid-coords"))
+               .andExpect(jsonPath("$.latitud").value(-31.63332940))
+               .andExpect(jsonPath("$.longitud").value(-60.70000080));
     }
 }
 

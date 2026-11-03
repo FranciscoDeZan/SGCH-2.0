@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -44,11 +45,11 @@ public class Cliente {
     @Column(name = "direccion", nullable = false)
     private String direccion;
     
-    @Column(columnDefinition = "DECIMAL(10,8)")
-    private Double latitud;
+    @Column(name = "latitud", precision = 10, scale = 8)
+    private BigDecimal latitud;
     
-    @Column(columnDefinition = "DECIMAL(11,8)")
-    private Double longitud;
+    @Column(name = "longitud", precision = 11, scale = 8)
+    private BigDecimal longitud;
     
     @Enumerated(EnumType.STRING)
     @Column(name = "calificacion", length = 10)
