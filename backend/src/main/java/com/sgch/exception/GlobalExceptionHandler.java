@@ -61,4 +61,15 @@ public class GlobalExceptionHandler {
         pd.setProperty("errores", errors);
         return pd;
     }
+
+    /**
+     * Maneja violaciones de reglas de negocio y argumentos ilegales (HTTP 400).
+     *
+     * @param ex excepción lanzada ante argumentos inválidos o reglas cross-field no cumplidas
+     * @return objeto {@link ProblemDetail} con status 400 Bad Request y el mensaje explicativo
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
 }
