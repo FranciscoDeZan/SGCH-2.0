@@ -1,6 +1,7 @@
 package com.sgch.repository;
 
 import com.sgch.model.Cliente;
+import com.sgch.model.CondicionFiscal;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -97,5 +98,35 @@ public class ClienteRepositoryTest {
         Cliente found = repository.findById(saved.getId()).orElseThrow();
         assertThat(found.getLatitud()).isEqualByComparingTo(new BigDecimal("-31.63332940"));
         assertThat(found.getLongitud()).isEqualByComparingTo(new BigDecimal("-60.70000080"));
+    }
+
+    @Test
+    void testDefaultCondicionFiscalIsResponsableInscripto() {
+        Cliente c = new Cliente();
+        c.setNombreRazonSocial("Cliente Sin Condicion");
+        c.setTelefono("111000111");
+        c.setDireccion("Direccion 1");
+        Cliente saved = repository.saveAndFlush(c);
+        entityManager.clear();
+
+        Cliente found = repository.findById(saved.getId()).orElseThrow();
+        assertThat(found.getCondicionFiscal()).isEqualTo(CondicionFiscal.RESPONSABLE_INSCRIPTO);
+        assertThat(found.getCuit()).isNull();
+    }
+
+    @Test
+    void testSaveAndRetrieveCuitAndCondicionesFiscales() {
+        Cliente c = new Cliente();
+        c.setNombreRazonSocial("Cliente Monotributista");
+        c.setTelefono("222000222");
+        c.setDireccion("Direccion 2");
+        c.setCuit("20301112224");
+        c.setCondicionFiscal(CondicionFiscal.MONOTRIBUTISTA);
+        Cliente saved = repository.saveAndFlush(c);
+        entityManager.clear();
+
+        Cliente found = repository.findById(saved.getId()).orElseThrow();
+        assertThat(found.getCuit()).isEqualTo("20301112224");
+        assertThat(found.getCondicionFiscal()).isEqualTo(CondicionFiscal.MONOTRIBUTISTA);
     }
 }

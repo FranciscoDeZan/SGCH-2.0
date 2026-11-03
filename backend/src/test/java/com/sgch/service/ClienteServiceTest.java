@@ -3,6 +3,7 @@ package com.sgch.service;
 import com.sgch.exception.ResourceNotFoundException;
 import com.sgch.model.CalificacionCliente;
 import com.sgch.model.Cliente;
+import com.sgch.model.CondicionFiscal;
 import com.sgch.repository.ClienteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -114,6 +115,8 @@ public class ClienteServiceTest {
         updatedData.setTipoHacienda("Invernada");
         updatedData.setFormasPagoPreferidas("Cheque 30 dias");
         updatedData.setObservaciones("Cliente destacado");
+        updatedData.setCuit("20301112224");
+        updatedData.setCondicionFiscal(CondicionFiscal.MONOTRIBUTISTA);
 
         Cliente result = service.update("c-1", updatedData);
 
@@ -127,6 +130,8 @@ public class ClienteServiceTest {
         assertThat(result.getTipoHacienda()).isEqualTo("Invernada");
         assertThat(result.getFormasPagoPreferidas()).isEqualTo("Cheque 30 dias");
         assertThat(result.getObservaciones()).isEqualTo("Cliente destacado");
+        assertThat(result.getCuit()).isEqualTo("20301112224");
+        assertThat(result.getCondicionFiscal()).isEqualTo(CondicionFiscal.MONOTRIBUTISTA);
         verify(repository, times(1)).save(cliente);
     }
 

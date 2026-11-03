@@ -76,6 +76,10 @@ public class ClienteService {
         target.setTipoHacienda(source.getTipoHacienda());
         target.setFormasPagoPreferidas(source.getFormasPagoPreferidas());
         target.setObservaciones(source.getObservaciones());
+        target.setCuit(source.getCuit());
+        if (source.getCondicionFiscal() != null) {
+            target.setCondicionFiscal(source.getCondicionFiscal());
+        }
         return repository.save(target);
     }
     
