@@ -1,0 +1,57 @@
+package com.sgch.dto;
+
+import com.sgch.model.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+public record OperacionResponse(
+        String id,
+        LocalDateTime fechaCarga,
+        LocalDateTime fechaOperacion,
+        ModalidadCircuito modalidadCircuito,
+        String consignatariaExterna,
+        String compradorId,
+        String compradorNombre,
+        String vendedorId,
+        String vendedorNombre,
+        CategoriaOperacion categoria,
+        String subcategoria,
+        BigDecimal kgNeto,
+        BigDecimal kgOrigenBruto,
+        BigDecimal porcentajeDesbaste,
+        BigDecimal kgLlegadaReferencia,
+        BigDecimal precioKgFacturado,
+        BigDecimal montoExtraCobradoComprador,
+        ModalidadPrecio modalidadPrecio,
+        Boolean precioEsFinal,
+        BigDecimal comisionPorcentajeVendedor,
+        BigDecimal comisionPorcentajeComprador,
+        BigDecimal comisionTotalCobradaReferencia,
+        CondicionFiscal condicionFiscalVendedor,
+        BigDecimal porcentajeDocumentadoGanado,
+        BigDecimal porcentajeDocumentadoComisionVendedor,
+        BigDecimal porcentajeDocumentadoComisionComprador,
+        BigDecimal ivaGanadoMontoOverride,
+        BigDecimal ivaComisionVendedorOverride,
+        BigDecimal ivaComisionCompradorOverride,
+        Boolean conGarantia,
+        BigDecimal retencionesExternasMonto,
+        CondicionEntrega condicionEntrega,
+        FleteCargoDe fleteCargoDe,
+        BigDecimal fleteMonto,
+        EstadoLiquidacion estadoLiquidacion,
+        String formaPago,
+        String plazo,
+        Raza raza,
+        String color,
+        String puntuacion,
+        String destino,
+        Integer cantidadMachos,
+        Integer cantidadHembras,
+        Boolean terneros,
+        String observaciones,
+        List<CuotaOperacionResponse> cuotas,
+        CalculoResultado calculo
+) {}
