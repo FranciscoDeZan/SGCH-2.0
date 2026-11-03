@@ -91,6 +91,19 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 | **R-066** | Chat 31/10 | — | Sanitización de DECISIONES-NEGOCIO.md | Aprobado |
 | **R-067** | Chat 31/10 | — | Backup externo encriptado de raw/ | Aprobado |
 | **R-068** | Chat 31/10 | — | Corrección de reportes del brain antes de cerrar | Aplicado |
+| **R-069** | Entrevista 03/11 | — | Spread comercial no modelado como precio bilateral | Aprobado |
+| **R-070** | Entrevista 03/11 | — | Saldos en DIRECTO son derivados, no persistidos | Aprobado |
+| **R-071** | Entrevista 03/11 | — | Comisión en CONSIGNATARIA_EXTERNA es neta de la firma | Aprobado |
+| **R-072** | Entrevista 03/11 | — | Comisión sobre monto bruto en PRECIO_FINAL | Aprobado |
+| **R-073** | Entrevista 03/11 | — | Distribución de cuotas bifurcada por circuito | Aprobado |
+| **R-074** | Entrevista 03/11 | — | No se modela cuenta corriente | Aprobado |
+| **R-075** | Entrevista 03/11 | — | Exento y CF aplican IVA 0% en venta | Aprobado |
+| **R-076** | Chat 03/11 | — | cuotas_operacion amplía R-063 a 3 tablas; 2 fechas por cuota | Aprobado |
+| **R-077** | Chat 03/11 | — | Se elimina RN02 (carga diferida 2h) | Aplicado |
+| **R-078** | Chat 03/11 | — | porcentaje_desbaste DECIMAL(5,2), rango −8.00 a +15.00 | Aprobado |
+| **R-079** | Chat 03/11 | — | 3 overrides de IVA (ganado + comisión vendedor + comisión comprador) | Aprobado |
+| **R-080** | Chat 03/11 | — | retenciones_externas_monto nullable, visible solo en CONSIGNATARIA_EXTERNA | Aprobado |
+| **R-081** | Chat 03/11 | — | Login diferido mientras corra en localhost; adelantar en Fase 2.B si se cargan datos reales en entorno accesible | Aprobado |
 
 ---
 
@@ -526,6 +539,97 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 - **Estado:** Aplicado.
 - **Ref:** commits ca2be3a y f5c0e46
 
+### R-069: Spread comercial no modelado como precio bilateral
+- **Qué:** La ganancia por diferencia (de precio o de kilos) NO se modela como precio bilateral ni doble kilaje de cálculo. En `Operacion` existe un único `kg_neto` (`NOT NULL`) y un único `precio_kg_facturado` (`NOT NULL`, base del IVA y la comisión), más `monto_extra_cobrado_comprador` (`NULL`, informativo) y `kg_llegada_referencia` (`NULL`, informativo).
+- **Por qué:** Cuando existe diferencia entre puntas, la factura oficial entre vendedor y comprador lleva un único precio y el resto no se factura por separado. Desdoblar precios oficiales complicaría la Capa 1 y Capa 2 con un escenario que fiscalmente no ocurre.
+- **Cita textual:** "Si vos hacés eso, es porque vendiste un 20% en negro... Y ese $3.500 va a ser igual para el vendedor y para el comprador" (`2026-11-03-entrevista-papa-operaciones-particulares.md:418-426`).
+- **Estado:** Aprobado. Documentado en Requerimientos v3.2 (RN06) y Anexo II v1.1 (§2).
+- **Ref:** `DECISIONES-NEGOCIO-DRAFT.md` (`D-11`, `B1`, `B2`) · `2026-11-03-entrevista-papa-operaciones-particulares.md:406-440`
+
+### R-070: Saldos en DIRECTO son derivados, no persistidos
+- **Qué:** Cada operación expone en lectura cuatro saldos derivados (no persistidos en columnas SQL): `total_a_cobrar_comprador`, `total_a_pagar_vendedor`, `saldo_hacienda_entre_partes` y `saldo_comision_firma`. En circuito `DIRECTO`, `saldo_hacienda_entre_partes = subtotal_ganado + iva_ganado` es informativo y dispara alerta de seguimiento al operador al vencer, mientras que `saldo_comision_firma` refleja lo que efectivamente cobra la firma.
+- **Por qué:** En negocio directo el dinero de la hacienda va del comprador al vendedor sin pasar por la firma, pero el operador necesita seguir su vencimiento para garantizar que la operación se pague en tiempo y forma sin mezclar esa cifra con la caja propia.
+- **Cita textual:** "Y tenés que... tenés que llevarlo. Porque vos por más que cobres solo comisión, estás en el medio de la operación... Entonces necesitás estar tranquilo que la operación sale bien, que se paga en tiempo y forma" (`2026-11-03-entrevista-papa-operaciones-particulares.md:20-24`).
+- **Estado:** Aprobado. Documentado en Anexo II v1.1 (§4).
+- **Ref:** `DECISIONES-NEGOCIO-DRAFT.md` (`D-07`, `B3`) · `2026-11-03-entrevista-papa-operaciones-particulares.md:20-60`
+
+### R-071: Comisión en CONSIGNATARIA_EXTERNA es neta de la firma
+- **Qué:** En operaciones con `modalidad_circuito = CONSIGNATARIA_EXTERNA`, el porcentaje de comisión cargado en el sistema representa directamente la comisión neta que le queda a la firma (habitualmente 2% facturado a la consignataria externa). No se modela en el cálculo la parte retenida por la consignataria externa; solo se habilita el campo informativo opcional `comision_total_cobrada_referencia`.
+- **Por qué:** La consignataria externa emite la liquidación al productor y luego envía a la firma un resumen indicando cuánto debe facturarle por su participación.
+- **Cita textual:** "Él hace la liquidación y él después te manda un resumen de cuenta y te dice: «Facturame tanto de comisión», que normalmente es el 2% porque es el arreglo que tenemos" (`2026-11-03-entrevista-papa-operaciones-particulares.md:98,114`).
+- **Estado:** Aprobado. Documentado en Requerimientos v3.2 (RN10) y Anexo II v1.1 (§4).
+- **Ref:** `DECISIONES-NEGOCIO-DRAFT.md` (`D-08`, `B3`) · `2026-11-03-entrevista-papa-operaciones-particulares.md:90-182`
+
+### R-072: Comisión sobre monto bruto en PRECIO_FINAL
+- **Qué:** Cuando `modalidad_precio = FINAL`, la comisión porcentual se calcula directamente sobre `subtotal_ganado = kg_neto × precio_kg_facturado` (monto bruto con IVA incluido), sin dividir previamente por `1,105`. Cuando `modalidad_precio = NETO`, se calcula sobre el neto.
+- **Por qué:** Refleja la práctica comercial real de los operadores al cerrar ventas a precio final en el campo, evitando discrepancias entre lo pactado de palabra y lo liquidado por el sistema.
+- **Cita textual:** "Hacelo sobre el total... En el caso del final hacelo sobre el total nomás y chau... Lo que correspondería es una cosa, lo que se hace es otra" (`2026-11-03-entrevista-papa-operaciones-particulares.md:224,256`).
+- **Estado:** Aprobado. Documentado en Requerimientos v3.2 (RN03) y Anexo II v1.1 (§2, §5).
+- **Ref:** `DECISIONES-NEGOCIO-DRAFT.md` (`D-09`) · `2026-11-03-entrevista-papa-operaciones-particulares.md:204-268`
+
+### R-073: Distribución de cuotas bifurcada por circuito
+- **Qué:** Al generar las `N` cuotas de una operación en `CuotaOperacion`, el importe sugerido por defecto se bifurca según el circuito: en `DIRECTO`, cuotas iguales (`total / N`); en `CONSIGNATARIA_EXTERNA`, `cuota 1 = (capital / N) + IVA + gastos` y las cuotas restantes `capital / N`. En ambos casos `monto_cuota` es editable por el operador.
+- **Por qué:** En operaciones directas los cheques se dividen en partes iguales, mientras que las consignatarias externas exigen el IVA y los gastos en el primer vencimiento a los 30 días.
+- **Cita textual:** "$33\%$, $33\%$ y $33\%$. Salvo que se pacte distinto... Ahora, si ese negocio pasa por una consignataria, lo más seguro que le cobren a los 30 días IVA y gastos más la primera cuota" (`2026-11-03-entrevista-papa-operaciones-particulares.md:322-346`).
+- **Estado:** Aprobado. Documentado en Requerimientos v3.2 (RF09, RN08).
+- **Ref:** `DECISIONES-NEGOCIO-DRAFT.md` (`D-10`, `B4`) · `2026-11-03-entrevista-papa-operaciones-particulares.md:322-386`
+
+### R-074: No se modela cuenta corriente
+- **Qué:** No se crea tabla `cuenta_corriente` ni compensación automática de saldos entre distintas operaciones de un mismo cliente. Todo `Cobro` se imputa a una `Operacion` (y opcionalmente a una `CuotaOperacion`).
+- **Por qué:** Como comisionistas directos no cruzan pagos entre distintos compradores y vendedores; cuando operan por consignataria externa, la compensación la realiza la consignataria en su propio analítico.
+- **Cita textual:** "Por lo general, no. Porque como no sos consignataria, entonces... es más difícil... Pedro le tiene que pagar a él y él paga al otro. No podés compensar" (`2026-11-03-entrevista-papa-operaciones-particulares.md:514-526`).
+- **Estado:** Aprobado. Documentado en Requerimientos v3.2 (RN07) y Anexo II v1.1 (§4).
+- **Ref:** `DECISIONES-NEGOCIO-DRAFT.md` (`D-13`) · `2026-11-03-entrevista-papa-operaciones-particulares.md:514-536`
+
+### R-075: Exento y CF aplican IVA 0% en venta
+- **Qué:** Se mantiene el enum `CondicionFiscal` con 4 valores (`RESPONSABLE_INSCRIPTO`, `MONOTRIBUTISTA`, `EXENTO`, `CONSUMIDOR_FINAL`). Cuando el vendedor es `MONOTRIBUTISTA`, `EXENTO` o `CONSUMIDOR_FINAL`, `iva_ganado = 0` (Caso D del Anexo II). Cuando actúa como comprador, no altera la fórmula porque el IVA ganado depende del vendedor.
+- **Por qué:** Los exentos de IVA representan menos del 1% de los casos y el consumidor final rural corresponde legalmente a un monotributista que al vender no discrimina IVA.
+- **Cita textual:** "el exento de IVA es poco y nada... no llega ni al 1%... consumidor final si querés llamarle, pero es monotributista... Si vende no le pagás el IVA y chau" (`2026-11-03-entrevista-papa-operaciones-particulares.md:542-590`).
+- **Estado:** Aprobado. Documentado en Requerimientos v3.2 (§6.1) y Anexo II v1.1 (§3.1 Caso D).
+- **Ref:** `DECISIONES-NEGOCIO-DRAFT.md` (`D-14`, `B10`) · `2026-11-03-entrevista-papa-operaciones-particulares.md:542-606`
+
+### R-076: cuotas_operacion amplía R-063 a 3 tablas; 2 fechas por cuota
+- **Qué:** Se amplía R-063 para que la migración `V2__create_operaciones_y_cobros.sql` cree tres tablas transaccionales: `operaciones`, `cuotas_operacion` y `cobros` (además del `ALTER TABLE clientes` para `cuit` y `condicion_fiscal`). Cada fila de `cuotas_operacion` almacena dos fechas de vencimiento calculadas desde `fecha_base_plazo` (`CARGA` / `REMATE`): `fecha_vencimiento_comprador` y `fecha_vencimiento_vendedor` (sumando `dias_descalce_vendedor`, default `0` en `DIRECTO` y `7` en `CONSIGNATARIA_EXTERNA`).
+- **Por qué:** El descalce de 7 días aplica a cada cuota individualmente (`30/60/90` → `37/67/97`), lo cual no puede representarse con un único par de fechas escalares en `operaciones`.
+- **Cita textual:** "El descalce de 7 días sí corresponde a todas las cuotas... el vendedor vende con 37, 67, 97 y el comprador compra con 30, 60 y 90. Y se aplica a cada cuota" (`relevamiento_whatsapp_reglas_impositivas_y_operativas.md:167-168`).
+- **Estado:** Aprobado. Documentado en Requerimientos v3.2 (§6.4, §9.1).
+- **Ref:** `DECISIONES-NEGOCIO-DRAFT.md` (`D-10`, `B4`) · R-063
+
+### R-077: Se elimina RN02 (carga diferida 2h)
+- **Qué:** Se elimina del Documento de Requerimientos la regla `RN02` (obligación de justificar en observaciones toda operación cargada más de 2 horas después de realizada) y se renumeran `RN03–RN06` a `RN02–RN05`. En `Operacion` coexisten `fecha_carga` y `fecha_operacion` sin restricción punitiva de horario.
+- **Por qué:** Era un residuo del prototipo académico v1 incompatible con el trabajo real en ruta y balanzas, donde las operaciones se cargan horas o días después en la oficina.
+- **Cita textual:** Regla de oro de Anexo II §1 ("el flujo principal de carga NO debe trabarse") y decisión `B11` aprobada por Francisco el 2026-11-03.
+- **Estado:** Aplicado en Requerimientos v3.2 (RF05, §5, CU-02, §10.4).
+- **Ref:** `DECISIONES-NEGOCIO-DRAFT.md` (`B11`) · `DOCUMENTO DE REQUERIMIENTOS - SGCH v2.md` (§5, §10.4)
+
+### R-078: porcentaje_desbaste DECIMAL(5,2), rango −8.00 a +15.00
+- **Qué:** El campo opcional `porcentaje_desbaste` en `operaciones` se modela como `DECIMAL(5,2)` con rango válido de `-8.00` a `+15.00`, utilizado para autocompletar `kg_neto` a partir de `kg_origen_bruto` cuando el operador lo ingresa.
+- **Por qué:** Soporta tanto los descuentos habituales de merma por desbaste (`-1%` a `-8%`) como los incrementos positivos por traqueteo previo en balanzas específicas (ej. `+1%` en Quitilipi y hasta `+15%` de margen operativo).
+- **Cita textual:** Desbaste en origen/destino (`transcripci_n_completa_de_entrevista_agropecuaria.md:109-145`) y decisión técnica `B1` aprobada por Francisco el 2026-11-03.
+- **Estado:** Aprobado. Documentado en Requerimientos v3.2 (RF05, §6.2).
+- **Ref:** `DECISIONES-NEGOCIO-DRAFT.md` (`B1`) · R-056
+
+### R-079: 3 overrides de IVA (ganado + comisión vendedor + comisión comprador)
+- **Qué:** La entidad `Operacion` incluye tres campos opcionales (`nullable`) de override manual de IVA: `iva_ganado_override`, `iva_comision_vendedor_override` e `iva_comision_comprador_override`. Cuando cualquiera de ellos está presente, su valor reemplaza el cálculo automático de la fórmula de Capa 2 para ese concepto.
+- **Por qué:** Cubre la opción "Otro monto" pedida por Santi para acuerdos cerrados por un importe redondo de IVA tanto en la hacienda como en las comisiones de cada punta.
+- **Cita textual:** "alguna opción abajo que diga «Otro», y ahí vos ponés el monto del IVA que querés facturar y chau" (`transcripci_n_completa_de_entrevista_agropecuaria.md:282`) y decisión `B5` aprobada por Francisco el 2026-11-03.
+- **Estado:** Aprobado. Documentado en Requerimientos v3.2 (RF05, §6.2) y Anexo II v1.1 (§3.1, §3.2).
+- **Ref:** `DECISIONES-NEGOCIO-DRAFT.md` (`B5`)
+
+### R-080: retenciones_externas_monto nullable, visible solo en CONSIGNATARIA_EXTERNA
+- **Qué:** Se incluye en `operaciones` el campo opcional `retenciones_externas_monto` (`BigDecimal`, nullable), visible en la interfaz únicamente cuando `modalidad_circuito = CONSIGNATARIA_EXTERNA`. Su carácter es informativo y no activa ningún motor de cálculo impositivo en SGCH.
+- **Por qué:** Permite anotar como referencia el monto retenido por Ganancias o IIBB en la liquidación de la consignataria externa sin violar RN01 (`D-04`).
+- **Cita textual:** Decisión técnica `B9` aprobada por Francisco el 2026-11-03.
+- **Estado:** Aprobado. Documentado en Requerimientos v3.2 (RF05, §6.2) y Anexo II v1.1 (§4).
+- **Ref:** `DECISIONES-NEGOCIO-DRAFT.md` (`DA-03`, `B9`)
+
+### R-081: Login diferido mientras corra en localhost; adelantar en Fase 2.B si se cargan datos reales en entorno accesible
+- **Qué:** La autenticación de usuarios se mantiene diferida mientras la aplicación se ejecute exclusivamente en `localhost` durante el desarrollo de la Iteración 2, combinada desde ahora con nomenclatura contable estrictamente neutra (`porcentaje_documentado_*`, R-066). Si en Fase 2.B los operadores comienzan a cargar datos reales en un entorno accesible, se adelantará un login con contraseña.
+- **Por qué:** No frena la construcción del core transaccional en desarrollo local y establece una condición explícita de disparo antes de exponer datos reales.
+- **Cita textual:** Decisión técnica `B7` aprobada por Francisco el 2026-11-03.
+- **Estado:** Aprobado. Documentado en Requerimientos v3.2 (§4.3).
+- **Ref:** `DECISIONES-NEGOCIO-DRAFT.md` (`DA-01`, `B6`, `B7`) · R-066
+
 ---
 
 ## Notas de Auditoría (Observaciones)
@@ -560,3 +664,4 @@ El subagent-driven-development con Gemini 3.8 Flash genera ~30 subagentes por se
 | 2026-09-15 | Antigravity + Usuario | Actualización | Incorporación de R-052..R-055 tras borrado de rama feature y cierre formal de Fase B. |
 | 2026-10-31 | Antigravity + Usuario | Actualización | Incorporación de R-056..R-064 desde decisiones del 15/09 (transcript_full.jsonl) y del 31/10 (chat). Corrección del audit report del 30/10. |
 | 2026-10-31 | Antigravity + Usuario | Actualización | Incorporación de R-065..R-068 desde decisiones del 31/10. R-065 y R-068 aplicados en commit f5c0e46; R-066 y R-067 aprobados como forward-looking. |
+| 2026-11-03 | Antigravity + Usuario | Actualización | Incorporación de R-069..R-081 tras entrevista con Papá del 03/11 (D-07 a D-14) y aprobación de las 12 decisiones técnicas de Tipo B (B1 a B12). Actualización de Requerimientos a v3.2 y Anexo II a v1.1. |
