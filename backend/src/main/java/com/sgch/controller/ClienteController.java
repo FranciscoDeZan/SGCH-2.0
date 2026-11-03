@@ -14,7 +14,7 @@ import java.util.List;
  * Provee endpoints CRUD para consultar, crear, actualizar y eliminar clientes.
  */
 @RestController
-@RequestMapping("/api/clientes")
+@RequestMapping({"/api/clientes", "/api/v1/clientes"})
 @RequiredArgsConstructor
 public class ClienteController {
     private final ClienteService service;

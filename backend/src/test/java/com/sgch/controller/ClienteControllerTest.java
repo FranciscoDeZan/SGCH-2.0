@@ -184,5 +184,51 @@ public class ClienteControllerTest {
                .andExpect(jsonPath("$.latitud").value(-31.63332940))
                .andExpect(jsonPath("$.longitud").value(-60.70000080));
     }
+
+    @Test
+    public void testListClientesV1Path() throws Exception {
+        Cliente c = new Cliente();
+        c.setId("1");
+        c.setNombreRazonSocial("Test V1");
+        when(clienteService.findAll()).thenReturn(Collections.singletonList(c));
+
+        mockMvc.perform(get("/api/v1/clientes").accept(MediaType.APPLICATION_JSON))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$[0].nombreRazonSocial").value("Test V1"));
+    }
+
+    @Test
+    public void testCreateClienteV1Path() throws Exception {
+        Cliente c = new Cliente();
+        c.setNombreRazonSocial("Juan Perez V1");
+        c.setTelefono("11223344");
+        c.setDireccion("Calle Falsa 123");
+
+        Cliente saved = new Cliente();
+        saved.setId("uuid-v1");
+        saved.setNombreRazonSocial("Juan Perez V1");
+        saved.setTelefono("11223344");
+        saved.setDireccion("Calle Falsa 123");
+
+        when(clienteService.save(any(Cliente.class))).thenReturn(saved);
+
+        mockMvc.perform(post("/api/v1/clientes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(c)))
+               .andExpect(status().isCreated())
+               .andExpect(jsonPath("$.id").value("uuid-v1"))
+               .andExpect(jsonPath("$.nombreRazonSocial").value("Juan Perez V1"));
+    }
+
+    @Test
+    public void testGetClienteByIdV1PathNotFound() throws Exception {
+        when(clienteService.findById("99")).thenThrow(new ResourceNotFoundException("No existe"));
+
+        mockMvc.perform(get("/api/v1/clientes/99"))
+               .andExpect(status().isNotFound())
+               .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+               .andExpect(jsonPath("$.status").value(404))
+               .andExpect(jsonPath("$.detail").value("No existe"));
+    }
 }
 
