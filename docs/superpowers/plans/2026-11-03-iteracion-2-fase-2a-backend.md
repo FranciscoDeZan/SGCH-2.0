@@ -8,7 +8,7 @@
 - **Modelo base de ejecución:** Flash High (excepto Task 6: Pro High)
 - **Total tasks:** 10 (Task 0 a Task 9)
 - **Duración estimada:** 5-7 sesiones de trabajo (10 tasks ejecutables)
-- **Estado:** APROBADO (2026-11-03)
+- **Estado:** DONE (2026-11-03). Fase 2.A completada y verificada. 140/140 tests verdes. Último commit: d3fdf73.
 
 ## Objetivo de Fase 2.A
 Implementar el backend core de Iteración 2: corrección de coordenadas de `Cliente` a `BigDecimal` (R-058), migración Flyway `V2` (ampliación de `clientes` y creación de `operaciones`, `cuotas_operacion` y `cobros` — R-063, R-076), entidades JPA (`Operacion`, `CuotaOperacion`, `Cobro`) y enums de dominio, DTOs de entrada/salida con validaciones Jakarta (AGENTS.md regla 2), motor de cálculo fiscal completo en 3 capas (`CalculadoraFinancieraService`: Capa 1 valorización económica, Capa 2 liquidación fiscal, Capa 3 saldos derivados por contraparte según circuito — Anexo II v1.1), servicios y endpoints REST `/api/v1/operaciones` y `/api/v1/cobros` con manejo de errores RFC 7807/9457 (`ProblemDetail`, R-008, AGENTS.md regla 1), y exposición de `/api/v1/clientes` en paralelo a `/api/clientes` legacy (R-062).

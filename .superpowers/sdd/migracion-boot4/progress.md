@@ -52,3 +52,15 @@ Verificacion:
 
 [2026-09-14 14:55 -03:00]
 Ruling 6: Docker Desktop operativo. ClienteRepositoryTest corre con Testcontainers y @ServiceConnection contra MySQL 8.0 en contenedor. 21/21 tests pasando. Step 2 (migracion a Boot 4.1.1) cerrado.
+
+## 2026-11-03 — Cierre Fase 2.A (Backend Core)
+
+- Tasks 0-8 completadas y verificadas con TDD + two-reviewer + checkpoints.
+- 140/140 tests verdes. Smoke E2E 9/9.
+- Commit final: d3fdf73.
+- Cálculo fiscal Capas 1+2+3 validado al centavo contra Anexo II §6.1 y §6.2.
+- 3 circuitos implementados y testeados (DIRECTO, CONSIGNATARIA_EXTERNA, PROPIA).
+- Endpoints REST /api/v1/operaciones y /api/v1/cobros funcionales end-to-end.
+- Migración /api/v1/clientes en paralelo a legacy (R-062).
+- Auditoría intermedia Tasks 0-5 ejecutada: 0 críticos, 0 importantes, 8 menores (van a Task 9 deuda técnica).
+- Próximo: Fase 2.B (frontend de Operaciones).

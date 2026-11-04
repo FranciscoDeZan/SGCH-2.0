@@ -105,6 +105,13 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 | **R-080** | Chat 03/11 | — | retenciones_externas_monto nullable, visible solo en CONSIGNATARIA_EXTERNA | Aprobado |
 | **R-081** | Chat 03/11 | — | Login diferido mientras corra en localhost; adelantar en Fase 2.B si se cargan datos reales en entorno accesible | Aprobado |
 | **R-082** | Consolidación 03/11 | — | Las 3 fuentes de verdad de Iteración 2 | Aplicado |
+| **R-083** | Fase 2.A | — | Semántica de monto_cuota en CIRCUITO DIRECTO | Aplicado |
+| **R-084** | Fase 2.A | — | Task 7 subdividida en 7.1 y 7.2 | Aplicado |
+| **R-085** | Fase 2.A | — | BigDecimal coordenadas + entityManager.clear() en tests | Aplicado |
+| **R-086** | Fase 2.A | — | Autonomía del agente en 2 ejes | Aplicado |
+| **R-087** | Fase 2.A | — | Prompts de ejecución sin superpower | Aplicado |
+| **R-088** | Fase 2.A | — | Auditoría intermedia entre Tasks 5 y 6 | Aplicado |
+| **R-089** | Fase 2.A | — | Push a origin/main al cierre de cada bloque verificado | Aplicado |
 
 ---
 
@@ -650,6 +657,48 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 - **Estado:** Aplicado en commit `640fa5a` (specs) + este commit (research).
 - **Ref:** R-065, R-066, R-067 · commit 640fa5a
 
+### R-083: Semántica de monto_cuota en CIRCUITO DIRECTO
+- **Qué:** En `CIRCUITO DIRECTO`, `monto_cuota` representa el pago entre partes (comprador → vendedor), informativo para la firma. La comisión de la firma se registra como `Cobro` con `tipo_movimiento = COBRO_COMISION` sin `cuota_id`. `estado_liquidacion` se actualiza con el agregado de `Cobro`, no con `monto_cuota`. Requiere cobertura de ambos saldos (`saldo_hacienda_entre_partes` + `saldo_comision_firma`) para pasar a `LIQUIDADO`.
+- **Por qué:** Refleja el flujo real del negocio; el dinero de la hacienda no pasa por la firma.
+- **Estado:** Aplicado (commit 0881d59, CobroService.java).
+- **Ref:** DECISIONES-NEGOCIO §3.7, Anexo II §4, chat 2026-11-03 (Opción A).
+
+### R-084: Task 7 subdividida en 7.1 y 7.2
+- **Qué:** Task 7 del plan Fase 2.A se subdivide en 7.1 (Services + tests unitarios Mockito) y 7.2 (Controllers + GlobalExceptionHandler + tests @WebMvcTest). Total 11 tasks ejecutables.
+- **Por qué:** Task 7 original mezclaba 2 servicios complejos + 2 controllers + 4 suites de tests. Subdividida para checkpoints humanos granulares.
+- **Estado:** Aplicado (commits 0881d59 + d139d33).
+- **Ref:** plan Fase 2.A, chat 2026-11-03.
+
+### R-085: BigDecimal coordenadas + entityManager.clear() en tests
+- **Qué:** `Cliente.java` usa `BigDecimal` para lat/lng con `@Column(precision, scale)` compatible con `DECIMAL(10,8)` y `(11,8)`. Tests de persistencia exacta requieren `entityManager.clear()` para forzar SELECT real y evitar falsos positivos del caché L1.
+- **Por qué:** Cierra deuda de R-058; garantiza precisión exacta contra MySQL 8.
+- **Estado:** Aplicado (commit 03b8137).
+- **Ref:** R-058, chat 2026-11-03.
+
+### R-086: Autonomía del agente en 2 ejes
+- **Qué:** Scope = cero libertad (plan aprobado es fuente de verdad, cambios requieren OK). Implementación = libertad delegada con revisión post-hoc por spec-reviewer + code-reviewer. Validado en Tasks 3-8: el agente eligió @ParameterizedTest con @EnumSource, helpers privados, fallbacks defensivos, sin scope creep.
+- **Por qué:** Reduce tokens de prompts, permite criterio del agente, mantiene red de seguridad en checkpoints.
+- **Estado:** Aplicado en Tasks 3-8. Control máximo se mantiene en Tasks 1 (schema SQL), 5 y 6 (fórmulas fiscales).
+- **Ref:** chat 2026-11-03.
+
+### R-087: Prompts de ejecución sin superpower
+- **Qué:** Los prompts de ejecución de tasks no invocan `superpowers:executing-plans`. La disciplina (TDD, two-reviewer, checkpoints, commits atómicos) viene de RULINGS.md + AGENTS.md, no de una tool. `executing-plans` solo se evaluará si en algún momento se ejecutan 3+ tasks sin checkpoint intermedio (confianza ganada, no dada).
+- **Por qué:** Superpower agrega overhead innecesario. La disciplina ya es explícita.
+- **Estado:** Aplicado en Tasks 0-8.
+- **Ref:** chat 2026-11-03.
+
+### R-088: Auditoría intermedia entre Tasks 5 y 6
+- **Qué:** Fase 2.A incluye auditoría intermedia de conformidad entre Tasks 5 (Capa 1+2) y Task 6 (Capa 3, integrador crítico). 7 dimensiones: conformidad con plan, consistencia cross-task, drift, gaps, rulings mal citados, riesgos para Task 6, calidad de tests. Modelo: Pro High, read-only.
+- **Por qué:** Task 6 es el integrador crítico; no se construye sobre base no auditada cross-task.
+- **Estado:** Aplicado (2026-11-03, reporte ejecutado por Antigravity).
+- **Ref:** chat 2026-11-03.
+
+### R-089: Push a origin/main al cierre de cada bloque verificado
+- **Qué:** El push a `origin/main` se hace al cierre de cada bloque de tasks verificadas (Tasks 0-5 en este caso) y antes de auditorías o fases críticas. Razón: 7+ commits verificados en local sin backup remoto es riesgo.
+- **Por qué:** Push primero, auditoría después. Minimiza el caos si hay findings que requieran revert.
+- **Estado:** Aplicado (Tasks 0-5 pusheadas en 0edaf98). Tasks 6-8 pendientes de push al cierre de Fase 2.A.
+- **Ref:** chat 2026-11-03.
+
 ---
 
 ## Notas de Auditoría (Observaciones)
@@ -672,6 +721,28 @@ El subagent-driven-development con Gemini 3.8 Flash genera ~30 subagentes por se
 ### NA-006
 "Killed N subagents" en Antigravity = cleanup normal de la plataforma al superar 20 subagentes en buffer. Sin efecto en repo ni pérdida de trabajo.
 
+### NA-007
+Docker Desktop en Windows (2026-11-03, Tasks 0 y 8) requirió en algunos casos el workaround: `Start-Process` detached → `wsl --shutdown` → wait 15-30s → `docker info` OK. En Tasks 2, 3, 4, 5, 6, 7, 8 arrancó al primer intento. Documentar el workaround para futuras tasks con Testcontainers.
+
+### NA-008
+Antigravity hace polling excesivo del test suite (~20 checks por task) durante ejecuciones de Maven. Consume créditos sin valor. Reducir a 2-3 polling con espera explícita o confiar en el retorno del proceso.
+
+### NA-009
+`OperacionRequest` expone `estadoLiquidacion` (Task 4). `OperacionService.create()` debe forzar `EstadoLiquidacion.PENDIENTE` ignorando el valor del request (RN05). En `update()` sí se respeta el request. Aplicado en Task 7.1 commit 0881d59. Fix cubierto por test.
+
+### NA-010
+El plan de Fase 2.A (`docs/superpowers/plans/2026-11-03-iteracion-2-fase-2a-backend.md`) tiene 2 citas imprecisas:
+1. Línea 373 y 560: dice "Caso B" para el desglose `/1.105` (RI + FINAL), pero el Anexo II v1.1 §3.1 define ese caso como "Caso C". Caso B es RI + NETO.
+2. Línea 580: cita "R-083" como ruling existente, pero RULINGS.md terminaba en R-082 al momento de escribir el plan. R-083 es un candidato que se formaliza en Task 9.
+Ambas citas deben corregirse en una futura revisión del plan o dejarse anotadas como deuda documental.
+
+### NA-011
+Los reportes narrativos de Antigravity (§3, §11 del reporte de cada task) tienen ruido del 10-20%:
+- Task 0: reportó "enum TipoOperacion (CON_RETORNO, A_TERMINO...)" — alucinación del siguiente paso.
+- Task 4: reportó R-078 y R-079 con contenido incorrecto.
+- Task 7.2: reportó "enum Circuito y EstadoOperacion" (los reales son ModalidadCircuito y EstadoLiquidacion); reportó "OffsetDateTime" (el código usa LocalDateTime); reportó "Task 8 = Tests de Integración Testcontainers" (Task 8 es migración /api/v1/clientes).
+Regla operativa: los commits reales (verificables con `git show` y `Select-String` en archivos) son la fuente de verdad. Los reportes narrativos requieren verificación cruzada siempre.
+
 ---
 
 ## Historial de Cambios
@@ -686,3 +757,4 @@ El subagent-driven-development con Gemini 3.8 Flash genera ~30 subagentes por se
 | 2026-10-31 | Antigravity + Usuario | Actualización | Incorporación de R-065..R-068 desde decisiones del 31/10. R-065 y R-068 aplicados en commit f5c0e46; R-066 y R-067 aprobados como forward-looking. |
 | 2026-11-03 | Antigravity + Usuario | Actualización | Incorporación de R-069..R-081 tras entrevista con Papá del 03/11 (D-07 a D-14) y aprobación de las 12 decisiones técnicas de Tipo B (B1 a B12). Actualización de Requerimientos a v3.2 y Anexo II a v1.1. |
 | 2026-11-03 | Antigravity + Usuario | Actualización | Incorporación de R-082 (las 3 fuentes de verdad de Iteración 2), publicación de `docs/superpowers/research/DECISIONES-NEGOCIO.md` sanitizado (R-066) y ajuste de `total_a_cobrar_comprador` en Anexo II §4 y RF06 (sobre base commit 640fa5a). |
+| 2026-11-03 | Antigravity + Usuario | Actualización | Incorporación de R-083..R-089 y NA-007..NA-011 tras cierre de Fase 2.A (Tasks 0-8). Total 89 rulings, 11 notas de auditoría. |

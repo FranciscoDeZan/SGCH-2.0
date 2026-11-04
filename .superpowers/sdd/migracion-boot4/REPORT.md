@@ -213,3 +213,41 @@ npm --prefix frontend test
 - Spring Boot 4.0 Migration Guide: `https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide`
 - Testcontainers 2.0 Release & Migration Notes: `https://testcontainers.com/modules/mysql/`
 - RFC 9457 — Problem Details for HTTP APIs: `https://www.rfc-editor.org/rfc/rfc9457`
+
+## Fase 2.A — Backend Core (Operaciones, Cuotas, Cobros y Cálculo Fiscal)
+
+- **Estado:** ✅ COMPLETADA (2026-11-03).
+- **Tasks ejecutadas:** 9 tasks (Task 0 a Task 8, según plan aprobado en commit fad1b59).
+- **Commits:** 03b8137, ac96e74, 68685ee, c59de46, cf960d9, 0edaf98, 06b79cd, 0881d59, d139d33, d3fdf73.
+- **Tests totales:** 140/140 verdes (0 failures, 0 errors, 0 skipped).
+- **Desglose por suite:**
+  - ClienteRepositoryTest: 6
+  - ClienteServiceTest: 9
+  - ClienteControllerTest: 13 (10 preexistentes + 3 nuevos /api/v1)
+  - OperacionRepositoryTest: 6
+  - CuotaOperacionRepositoryTest: 5
+  - CobroRepositoryTest: 9
+  - OperacionDtoValidationTest: 13
+  - OperacionMapperTest: 7
+  - CalculadoraFinancieraServiceCapas1y2Test: 24
+  - CalculadoraFinancieraServiceCapa3Test: 12
+  - OperacionServiceTest: 12
+  - CobroServiceTest: 9
+  - OperacionControllerTest: 8
+  - CobroControllerTest: 7
+- **Endpoints implementados:**
+  - POST /api/v1/operaciones (201 Created, 400 Bad Request)
+  - GET /api/v1/operaciones (200 OK, con filtros circuito/clienteId/estado/fechaDesde/fechaHasta)
+  - GET /api/v1/operaciones/{id} (200 OK, 404 Not Found)
+  - PUT /api/v1/operaciones/{id} (200 OK, 400, 404)
+  - POST /api/v1/cobros (201, 400)
+  - GET /api/v1/cobros?operacionId=... (200)
+  - GET /api/v1/cobros/{id} (200, 404)
+  - GET /api/v1/clientes (paralelo a /api/clientes legacy, R-062)
+- **Cálculo fiscal validado:**
+  - Capa 1 (valorización económica): precio_kg_facturado único, comisiones bilaterales, comisión sobre bruto en PRECIO_FINAL (R-072).
+  - Capa 2 (liquidación fiscal): IVA ganado 4 casos (MONOTRIBUTISTA/EXENTO/CONSUMIDOR_FINAL→0%, RI+NETO→10.5%, RI+FINAL→desglose /1.105), IVA comisiones 21% bilateral, 3 overrides de IVA (R-079).
+  - Capa 3 (saldos por contraparte): 3 circuitos × 4 saldos. Regresión al centavo con Anexo II §6.1 y §6.2.
+- **Smoke test E2E:** 9/9 curls OK (3 POST operaciones por circuito, list, 404 ProblemDetail, POST cobro, GET cobros, GET v1 clientes, GET legacy clientes).
+- **Deuda técnica pendiente:** ver NA-009, NA-010, NA-011, y findings M-01 a M-08 de la auditoría intermedia.
+- **Fase 2.B (frontend operaciones):** siguiente.
