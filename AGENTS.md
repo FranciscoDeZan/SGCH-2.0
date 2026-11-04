@@ -45,7 +45,10 @@ When not to be lazy:
 - Do not skip understanding. A small diff you do not understand is just laziness dressed up as efficiency.
 - Non-trivial logic leaves one runnable check behind. Trivial one-liners need no test.
 
-## Reglas Específicas del Proyecto (SGCH v2)
+## Project Map
 
-1. **Manejo de Errores (API):** En Spring Boot, utilizar SIEMPRE `@ControllerAdvice` retornando `ProblemDetail` (RFC 7807). No devolver Maps sueltos.
-2. **DTOs vs Entidades:** A partir de la Iteración 2, utilizar DTOs para Request y Response en los Controllers. No exponer Entidades JPA directamente para evitar sobre-publicación de datos.
+- **Backend (`backend/`):** Spring Boot 4.1.1 + Java 17 + Jackson 3 + JPA/Hibernate 7 + Flyway + MySQL 8 (Testcontainers 2.0.5).
+- **Frontend (`frontend/`):** React 18 + Vite + TypeScript + Tailwind CSS + Vitest.
+- **Specs & Business Decisions:** `docs/superpowers/specs/` (Requerimientos v3.2 + Anexo II v1.1) y `docs/superpowers/research/DECISIONES-NEGOCIO.md`.
+- **Technical Rulings (ADRs):** `.superpowers/sdd/migracion-boot4/RULINGS.md`.
+- **Scoped Rules:** Antes de tocar código de backend, leé `.agents/rules/backend-java.md`. Antes de tocar frontend, leé `.agents/rules/frontend-react.md`.

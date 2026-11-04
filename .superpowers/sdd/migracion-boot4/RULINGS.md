@@ -112,6 +112,7 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 | **R-087** | Fase 2.A | — | Prompts de ejecución sin superpower | Aplicado |
 | **R-088** | Fase 2.A | — | Auditoría intermedia entre Tasks 5 y 6 | Aplicado |
 | **R-089** | Fase 2.A | — | Push a origin/main al cierre de cada bloque verificado | Aplicado |
+| **R-096** | Consolidación 04/11 | — | Reestructuración de AGENTS.md como router + `.agents/rules/*.md` (progressive disclosure) | Aplicado |
 
 ---
 
@@ -699,6 +700,12 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 - **Estado:** Aplicado (Tasks 0-5 pusheadas en 0edaf98). Tasks 6-9 pusheadas a origin/main (commit da9e796).
 - **Ref:** chat 2026-11-03.
 
+### R-096: Reestructuración de AGENTS.md como router y extracción a `.agents/rules/`
+- **Qué:** `AGENTS.md` se reestructura como router liviano (filosofía Ponytail always-on + `## Project Map` + pointers explícitos) y las reglas específicas de stack se extraen a `.agents/rules/backend-java.md` (`trigger: glob`, `globs: "backend/**/*.java"`) y `.agents/rules/frontend-react.md` (`trigger: glob`, `globs: "frontend/**/*.{ts,tsx}"`).
+- **Por qué:** Progressive disclosure verificado contra la especificación nativa del sistema de personalización de Antigravity 2.0 (`agy-customizations/SKILL.md`). `AGENTS.md` se carga siempre en menos de 60 líneas; las reglas condicionales de backend y frontend se inyectan solo cuando el agente opera sobre archivos del scope correspondiente, reduciendo context rot y permitiendo escalar reglas futuras (DB, CI, deployment) sin inflar `AGENTS.md`.
+- **Estado:** Aplicado (2026-11-04).
+- **Ref:** chat 2026-11-04 (Opción D, estructura en 3 capas).
+
 ---
 
 ## Notas de Auditoría (Observaciones)
@@ -771,3 +778,4 @@ Limpieza de inconsistencias documentales detectadas en la auditoría final de Fa
 | 2026-11-03 | Antigravity + Usuario | Actualización | Incorporación de R-082 (las 3 fuentes de verdad de Iteración 2), publicación de `docs/superpowers/research/DECISIONES-NEGOCIO.md` sanitizado (R-066) y ajuste de `total_a_cobrar_comprador` en Anexo II §4 y RF06 (sobre base commit 640fa5a). |
 | 2026-11-03 | Antigravity + Usuario | Actualización | Incorporación de R-083..R-089 y NA-007..NA-011 tras cierre de Fase 2.A (Tasks 0-8). Total 89 rulings, 11 notas de auditoría. |
 | 2026-11-03 | Fix I-01 | Actualización | Corrección de I-01 (fallback condicionFiscal en ClienteService.save). Documentación de NA-012, NA-013, NA-014. Corrección de R-058 y R-089. Fix del emoji en REPORT.md. |
+| 2026-11-04 | Consolidación AGENTS | Actualización | Incorporación de R-096: reestructuración de `AGENTS.md` en 3 capas con `.agents/rules/backend-java.md` y `.agents/rules/frontend-react.md` para progressive disclosure. |
