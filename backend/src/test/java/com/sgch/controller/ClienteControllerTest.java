@@ -1,26 +1,38 @@
 package com.sgch.controller;
 
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import com.sgch.dto.ClienteRequest;
+import com.sgch.dto.ClienteResponse;
+import com.sgch.mapper.ClienteMapper;
+import com.sgch.model.CalificacionCliente;
 import com.sgch.model.Cliente;
+import com.sgch.model.CondicionFiscal;
 import com.sgch.service.ClienteService;
 import com.sgch.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Collections;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@Import(ClienteMapper.class)
 @WebMvcTest(ClienteController.class)
 public class ClienteControllerTest {
     @Autowired private MockMvc mockMvc;
@@ -40,8 +52,8 @@ public class ClienteControllerTest {
 
     @Test
     public void testCreateClienteInvalidReturnsProblemDetail() throws Exception {
-        Cliente c = new Cliente(); 
-        mockMvc.perform(post("/api/clientes").contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(c)))
+        ClienteRequest req = new ClienteRequest(); 
+        mockMvc.perform(post("/api/clientes").contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(req)))
                .andExpect(status().isBadRequest())
                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                .andExpect(jsonPath("$.status").value(400))
@@ -51,14 +63,14 @@ public class ClienteControllerTest {
 
     @Test
     public void testCreateClienteExceedingLengthConstraintsReturnsValidationErrors() throws Exception {
-        Cliente c = new Cliente();
-        c.setNombreRazonSocial("A".repeat(256));
-        c.setTelefono("1".repeat(51));
-        c.setDireccion("D".repeat(256));
+        ClienteRequest req = new ClienteRequest();
+        req.setNombreRazonSocial("A".repeat(256));
+        req.setTelefono("1".repeat(51));
+        req.setDireccion("D".repeat(256));
 
         mockMvc.perform(post("/api/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(c)))
+                .content(objectMapper.writeValueAsString(req)))
                .andExpect(status().isBadRequest())
                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                .andExpect(jsonPath("$.status").value(400))
@@ -80,9 +92,9 @@ public class ClienteControllerTest {
     @Test
     public void testUniqueConflictReturnsProblemDetail() throws Exception {
         when(clienteService.save(any(Cliente.class))).thenThrow(new DataIntegrityViolationException("Conflict"));
-        Cliente c = new Cliente();
-        c.setNombreRazonSocial("A"); c.setTelefono("123"); c.setDireccion("A");
-        mockMvc.perform(post("/api/clientes").contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(c)))
+        ClienteRequest req = new ClienteRequest();
+        req.setNombreRazonSocial("A"); req.setTelefono("123"); req.setDireccion("A");
+        mockMvc.perform(post("/api/clientes").contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(req)))
                .andExpect(status().isConflict())
                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                .andExpect(jsonPath("$.status").value(409))
@@ -106,10 +118,10 @@ public class ClienteControllerTest {
 
     @Test
     public void testCreateClienteSuccess() throws Exception {
-        Cliente c = new Cliente();
-        c.setNombreRazonSocial("Juan Perez");
-        c.setTelefono("11223344");
-        c.setDireccion("Calle Falsa 123");
+        ClienteRequest req = new ClienteRequest();
+        req.setNombreRazonSocial("Juan Perez");
+        req.setTelefono("11223344");
+        req.setDireccion("Calle Falsa 123");
 
         Cliente saved = new Cliente();
         saved.setId("uuid-1");
@@ -121,7 +133,7 @@ public class ClienteControllerTest {
 
         mockMvc.perform(post("/api/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(c)))
+                .content(objectMapper.writeValueAsString(req)))
                .andExpect(status().isCreated())
                .andExpect(jsonPath("$.id").value("uuid-1"))
                .andExpect(jsonPath("$.nombreRazonSocial").value("Juan Perez"));
@@ -129,10 +141,10 @@ public class ClienteControllerTest {
 
     @Test
     public void testUpdateClienteSuccess() throws Exception {
-        Cliente c = new Cliente();
-        c.setNombreRazonSocial("Juan Actualizado");
-        c.setTelefono("11223344");
-        c.setDireccion("Nueva Calle 456");
+        ClienteRequest req = new ClienteRequest();
+        req.setNombreRazonSocial("Juan Actualizado");
+        req.setTelefono("11223344");
+        req.setDireccion("Nueva Calle 456");
 
         Cliente updated = new Cliente();
         updated.setId("1");
@@ -144,7 +156,7 @@ public class ClienteControllerTest {
 
         mockMvc.perform(put("/api/clientes/1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(c)))
+                .content(objectMapper.writeValueAsString(req)))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.id").value("1"))
                .andExpect(jsonPath("$.nombreRazonSocial").value("Juan Actualizado"));
@@ -159,12 +171,12 @@ public class ClienteControllerTest {
 
     @Test
     public void testCreateClienteWithBigDecimalCoordinatesSuccess() throws Exception {
-        Cliente c = new Cliente();
-        c.setNombreRazonSocial("Agropecuaria El Ceibo");
-        c.setTelefono("3415556677");
-        c.setDireccion("Ruta 34 Km 120");
-        c.setLatitud(new BigDecimal("-31.63332940"));
-        c.setLongitud(new BigDecimal("-60.70000080"));
+        ClienteRequest req = new ClienteRequest();
+        req.setNombreRazonSocial("Agropecuaria El Ceibo");
+        req.setTelefono("3415556677");
+        req.setDireccion("Ruta 34 Km 120");
+        req.setLatitud(new BigDecimal("-31.63332940"));
+        req.setLongitud(new BigDecimal("-60.70000080"));
 
         Cliente saved = new Cliente();
         saved.setId("uuid-coords");
@@ -178,7 +190,7 @@ public class ClienteControllerTest {
 
         mockMvc.perform(post("/api/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(c)))
+                .content(objectMapper.writeValueAsString(req)))
                .andExpect(status().isCreated())
                .andExpect(jsonPath("$.id").value("uuid-coords"))
                .andExpect(jsonPath("$.latitud").value(-31.63332940))
@@ -199,10 +211,10 @@ public class ClienteControllerTest {
 
     @Test
     public void testCreateClienteV1Path() throws Exception {
-        Cliente c = new Cliente();
-        c.setNombreRazonSocial("Juan Perez V1");
-        c.setTelefono("11223344");
-        c.setDireccion("Calle Falsa 123");
+        ClienteRequest req = new ClienteRequest();
+        req.setNombreRazonSocial("Juan Perez V1");
+        req.setTelefono("11223344");
+        req.setDireccion("Calle Falsa 123");
 
         Cliente saved = new Cliente();
         saved.setId("uuid-v1");
@@ -214,7 +226,7 @@ public class ClienteControllerTest {
 
         mockMvc.perform(post("/api/v1/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(c)))
+                .content(objectMapper.writeValueAsString(req)))
                .andExpect(status().isCreated())
                .andExpect(jsonPath("$.id").value("uuid-v1"))
                .andExpect(jsonPath("$.nombreRazonSocial").value("Juan Perez V1"));
@@ -256,9 +268,82 @@ public class ClienteControllerTest {
                .andExpect(jsonPath("$.id").value("uuid-no-cond"))
                .andExpect(jsonPath("$.nombreRazonSocial").value("Juan Sin Condicion"));
 
-        org.mockito.ArgumentCaptor<Cliente> captor = org.mockito.ArgumentCaptor.forClass(Cliente.class);
+        ArgumentCaptor<Cliente> captor = ArgumentCaptor.forClass(Cliente.class);
         verify(clienteService, times(1)).save(captor.capture());
-        org.assertj.core.api.Assertions.assertThat(captor.getValue().getNombreRazonSocial()).isEqualTo("Juan Sin Condicion");
+        assertThat(captor.getValue().getNombreRazonSocial()).isEqualTo("Juan Sin Condicion");
+    }
+
+    @Test
+    public void testJsonContractIsomorphismBetweenEntityAndResponse() throws Exception {
+        Cliente cliente = new Cliente();
+        cliente.setId("uuid-iso-1");
+        cliente.setNombreRazonSocial("Agropecuaria San Carlos S.A.");
+        cliente.setCuit("30712345678");
+        cliente.setCondicionFiscal(CondicionFiscal.RESPONSABLE_INSCRIPTO);
+        cliente.setTelefono("3415559988");
+        cliente.setEmail("contacto@sancarlos.com.ar");
+        cliente.setDireccion("Ruta 9 Km 280");
+        cliente.setLatitud(new BigDecimal("-32.95123456"));
+        cliente.setLongitud(new BigDecimal("-60.66123456"));
+        cliente.setCalificacion(CalificacionCliente.A);
+        cliente.setTipoHacienda("Invernada y Cria");
+        cliente.setFormasPagoPreferidas("Valores 30/60 dias");
+        cliente.setObservaciones("Cliente preferencial con calificacion crediticia impecable");
+        cliente.setFechaUltimaOperacion(LocalDateTime.of(2026, 11, 1, 10, 30, 0));
+        cliente.setFechaUltimoContacto(LocalDateTime.of(2026, 11, 2, 16, 45, 0));
+
+        when(clienteService.save(any(Cliente.class))).thenReturn(cliente);
+
+        String rawJson = """
+                {
+                    "nombreRazonSocial": "Agropecuaria San Carlos S.A.",
+                    "cuit": "30712345678",
+                    "condicionFiscal": "RESPONSABLE_INSCRIPTO",
+                    "telefono": "3415559988",
+                    "email": "contacto@sancarlos.com.ar",
+                    "direccion": "Ruta 9 Km 280",
+                    "latitud": -32.95123456,
+                    "longitud": -60.66123456,
+                    "calificacion": "A",
+                    "tipoHacienda": "Invernada y Cria",
+                    "formasPagoPreferidas": "Valores 30/60 dias",
+                    "observaciones": "Cliente preferencial con calificacion crediticia impecable",
+                    "fechaUltimaOperacion": "2026-11-01T10:30:00",
+                    "fechaUltimoContacto": "2026-11-02T16:45:00"
+                }
+                """;
+
+        MvcResult result = mockMvc.perform(post("/api/clientes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(rawJson))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        JsonNode responseNode = objectMapper.readTree(result.getResponse().getContentAsString());
+        JsonNode expectedEntityNode = objectMapper.readTree(objectMapper.writeValueAsString(cliente));
+
+        assertThat(responseNode).isEqualTo(expectedEntityNode);
+        assertThat(responseNode.size()).isEqualTo(15);
+    }
+
+    @Test
+    public void testCreateClienteWithInvalidCuitReturnsBadRequest() throws Exception {
+        String invalidCuitJson = """
+                {
+                    "nombreRazonSocial": "Cliente Cuit Invalido",
+                    "telefono": "11223344",
+                    "direccion": "Calle Falsa 123",
+                    "cuit": "12345"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/clientes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(invalidCuitJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.errores.cuit").value("El CUIT debe tener 11 dígitos"));
     }
 }
 

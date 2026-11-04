@@ -33,7 +33,7 @@ public class Cliente {
     private String nombreRazonSocial;
 
     @Pattern(regexp = "^\\d{11}$", message = "El CUIT debe tener 11 dígitos")
-    @Column(name = "cuit", length = 11)
+    @Column(name = "cuit", unique = true, length = 11)
     private String cuit;
 
     @Enumerated(EnumType.STRING)

@@ -129,4 +129,45 @@ public class ClienteRepositoryTest {
         assertThat(found.getCuit()).isEqualTo("20301112224");
         assertThat(found.getCondicionFiscal()).isEqualTo(CondicionFiscal.MONOTRIBUTISTA);
     }
+
+    @Test
+    void testUniqueCuitThrowsException() {
+        Cliente c1 = new Cliente();
+        c1.setNombreRazonSocial("Cliente CUIT 1");
+        c1.setTelefono("111111111");
+        c1.setDireccion("Direccion 1");
+        c1.setCuit("20301112224");
+        repository.saveAndFlush(c1);
+
+        Cliente c2 = new Cliente();
+        c2.setNombreRazonSocial("Cliente CUIT 2");
+        c2.setTelefono("222222222");
+        c2.setDireccion("Direccion 2");
+        c2.setCuit("20301112224");
+
+        assertThrows(DataIntegrityViolationException.class, () -> {
+            repository.saveAndFlush(c2);
+        });
+    }
+
+    @Test
+    void testMultipleNullCuitsAllowed() {
+        Cliente c1 = new Cliente();
+        c1.setNombreRazonSocial("Cliente Null CUIT 1");
+        c1.setTelefono("333333333");
+        c1.setDireccion("Direccion 1");
+        c1.setCuit(null);
+        repository.saveAndFlush(c1);
+
+        Cliente c2 = new Cliente();
+        c2.setNombreRazonSocial("Cliente Null CUIT 2");
+        c2.setTelefono("444444444");
+        c2.setDireccion("Direccion 2");
+        c2.setCuit(null);
+        Cliente saved2 = repository.saveAndFlush(c2);
+
+        entityManager.clear();
+        assertThat(saved2.getId()).isNotNull();
+        assertThat(repository.findById(saved2.getId())).isPresent();
+    }
 }

@@ -69,7 +69,6 @@ public class ClienteService {
     @Transactional
     public Cliente update(String id, Cliente source) {
         Cliente target = findById(id);
-        // TODO(Iteración 2): Resolver copia de campos con DTOs y evitar merge completo.
         target.setNombreRazonSocial(source.getNombreRazonSocial());
         target.setTelefono(source.getTelefono());
         target.setEmail(source.getEmail());
@@ -81,6 +80,8 @@ public class ClienteService {
         target.setFormasPagoPreferidas(source.getFormasPagoPreferidas());
         target.setObservaciones(source.getObservaciones());
         target.setCuit(source.getCuit());
+        target.setFechaUltimaOperacion(source.getFechaUltimaOperacion());
+        target.setFechaUltimoContacto(source.getFechaUltimoContacto());
         if (source.getCondicionFiscal() != null) {
             target.setCondicionFiscal(source.getCondicionFiscal());
         }
