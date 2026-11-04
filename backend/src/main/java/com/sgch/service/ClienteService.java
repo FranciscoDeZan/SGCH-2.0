@@ -2,6 +2,7 @@ package com.sgch.service;
 
 import com.sgch.exception.ResourceNotFoundException;
 import com.sgch.model.Cliente;
+import com.sgch.model.CondicionFiscal;
 import com.sgch.repository.ClienteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -51,6 +52,9 @@ public class ClienteService {
     @Transactional
     public Cliente save(Cliente cliente) {
         cliente.setId(null);
+        if (cliente.getCondicionFiscal() == null) {
+            cliente.setCondicionFiscal(CondicionFiscal.RESPONSABLE_INSCRIPTO);
+        }
         return repository.save(cliente);
     }
     

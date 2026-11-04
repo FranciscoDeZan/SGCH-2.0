@@ -100,6 +100,22 @@ public class ClienteServiceTest {
     }
 
     @Test
+    void testSaveWithNullCondicionFiscal_appliesDefault() {
+        Cliente input = new Cliente();
+        input.setNombreRazonSocial("Cliente Sin Condicion");
+        input.setTelefono("12345");
+        input.setDireccion("Calle 1");
+        input.setCondicionFiscal(null);
+
+        when(repository.save(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Cliente result = service.save(input);
+
+        assertThat(result.getCondicionFiscal()).isEqualTo(CondicionFiscal.RESPONSABLE_INSCRIPTO);
+        verify(repository, times(1)).save(input);
+    }
+
+    @Test
     void testUpdateSuccess() {
         when(repository.findById("c-1")).thenReturn(Optional.of(cliente));
         when(repository.save(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));

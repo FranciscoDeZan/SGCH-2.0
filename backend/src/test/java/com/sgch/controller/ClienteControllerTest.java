@@ -230,5 +230,35 @@ public class ClienteControllerTest {
                .andExpect(jsonPath("$.status").value(404))
                .andExpect(jsonPath("$.detail").value("No existe"));
     }
+
+    @Test
+    public void testCreateClienteSinCondicionFiscalEnJson_delegaEnService() throws Exception {
+        String jsonWithoutCondicionFiscal = """
+                {
+                    "nombreRazonSocial": "Juan Sin Condicion",
+                    "telefono": "11223344",
+                    "direccion": "Calle Falsa 123"
+                }
+                """;
+
+        Cliente saved = new Cliente();
+        saved.setId("uuid-no-cond");
+        saved.setNombreRazonSocial("Juan Sin Condicion");
+        saved.setTelefono("11223344");
+        saved.setDireccion("Calle Falsa 123");
+
+        when(clienteService.save(any(Cliente.class))).thenReturn(saved);
+
+        mockMvc.perform(post("/api/clientes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonWithoutCondicionFiscal))
+               .andExpect(status().isCreated())
+               .andExpect(jsonPath("$.id").value("uuid-no-cond"))
+               .andExpect(jsonPath("$.nombreRazonSocial").value("Juan Sin Condicion"));
+
+        org.mockito.ArgumentCaptor<Cliente> captor = org.mockito.ArgumentCaptor.forClass(Cliente.class);
+        verify(clienteService, times(1)).save(captor.capture());
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getNombreRazonSocial()).isEqualTo("Juan Sin Condicion");
+    }
 }
 

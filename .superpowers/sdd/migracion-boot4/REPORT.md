@@ -216,7 +216,7 @@ npm --prefix frontend test
 
 ## Fase 2.A — Backend Core (Operaciones, Cuotas, Cobros y Cálculo Fiscal)
 
-- **Estado:** ✅ COMPLETADA (2026-11-03).
+- **Estado:** COMPLETADA (2026-11-03).
 - **Tasks ejecutadas:** 9 tasks (Task 0 a Task 8, según plan aprobado en commit fad1b59).
 - **Commits:** 03b8137, ac96e74, 68685ee, c59de46, cf960d9, 0edaf98, 06b79cd, 0881d59, d139d33, d3fdf73.
 - **Tests totales:** 140/140 verdes (0 failures, 0 errors, 0 skipped).

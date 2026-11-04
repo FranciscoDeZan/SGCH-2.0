@@ -80,7 +80,7 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 | **R-055** | Decisión de cierre | — | Conservación vs borrado de ramas feature | Aplicado |
 | **R-056** | Chat 15/09 | — | BigDecimal para dinero y kg | Aprobado |
 | **R-057** | Chat 15/09 | — | PK String UUID para Operacion y Cobro (extiende R-024) | Aprobado |
-| **R-058** | Chat 31/10 | — | BigDecimal para coordenadas (no Double) | Parcial |
+| **R-058** | Chat 31/10 | — | BigDecimal para coordenadas (no Double) | Aplicado |
 | **R-059** | Chat 15/09 | — | UI de Operaciones en Iteración 2 | Aprobado |
 | **R-060** | Chat 15/09 | — | Cobro en tabla separada | Aprobado |
 | **R-061** | Chat 15/09 + 31/10 | — | Frontend Opción C /api/v1 (ejecutable en I2) | Aprobado |
@@ -474,7 +474,7 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 - **Qué:** Latitud y longitud se modelan con `BigDecimal` en Java, alineado con las columnas `DECIMAL(10,8)` y `DECIMAL(11,8)` existentes en la tabla `clientes`. No se usa `Double`.
 - **Por qué:** Coherencia con R-056 (todo valor decimal exacto es BigDecimal) y con el tipo `DECIMAL` del SQL. La propuesta previa de mantener `Double` fue descartada por el usuario.
 - **Cita textual:** "Decisión del usuario en chat 2026-10-31 (D1): 'BigDecimal en Java + DECIMAL en SQL'".
-- **Estado:** Aprobado. Parcial: `Cliente.java:48,51` hoy declara `Double`. Deuda técnica a ejecutar como Task 0 de Iteración 2, antes de crear `Operacion` (consistencia entre entidades).
+- **Estado:** Aplicado (commit 03b8137). Cierra deuda de R-058. Ver R-085.
 - **Ref:** chat 2026-10-31 (D1) · transcript_full.jsonl:2028 (propuesta original de Double, descartada)
 
 ### R-059: UI de Operaciones en Iteración 2
@@ -696,7 +696,7 @@ Este repositorio mantiene una separación explícita de responsabilidades en su 
 ### R-089: Push a origin/main al cierre de cada bloque verificado
 - **Qué:** El push a `origin/main` se hace al cierre de cada bloque de tasks verificadas (Tasks 0-5 en este caso) y antes de auditorías o fases críticas. Razón: 7+ commits verificados en local sin backup remoto es riesgo.
 - **Por qué:** Push primero, auditoría después. Minimiza el caos si hay findings que requieran revert.
-- **Estado:** Aplicado (Tasks 0-5 pusheadas en 0edaf98). Tasks 6-8 pendientes de push al cierre de Fase 2.A.
+- **Estado:** Aplicado (Tasks 0-5 pusheadas en 0edaf98). Tasks 6-9 pusheadas a origin/main (commit da9e796).
 - **Ref:** chat 2026-11-03.
 
 ---
@@ -743,6 +743,18 @@ Los reportes narrativos de Antigravity (§3, §11 del reporte de cada task) tien
 - Task 7.2: reportó "enum Circuito y EstadoOperacion" (los reales son ModalidadCircuito y EstadoLiquidacion); reportó "OffsetDateTime" (el código usa LocalDateTime); reportó "Task 8 = Tests de Integración Testcontainers" (Task 8 es migración /api/v1/clientes).
 Regla operativa: los commits reales (verificables con `git show` y `Select-String` en archivos) son la fuente de verdad. Los reportes narrativos requieren verificación cruzada siempre.
 
+### NA-012
+Deserialización de Jackson 3 con `@AllArgsConstructor` en entidades JPA expuestas directamente como `@RequestBody` sin DTO (como `Cliente.java`): cuando el compilador tiene `-parameters` activo y el payload JSON omite una propiedad (`condicionFiscal`), Jackson 3 invoca el constructor completo pasando `null`, anulando el valor por defecto del campo definido en Java (`CondicionFiscal.RESPONSABLE_INSCRIPTO`). Regla: todo campo `NOT NULL` con valor por defecto de negocio en entidades sin DTO de entrada debe contar con fallback explícito en la capa de servicio (`save` y `update`) para evitar violaciones de integridad referencial o constraints de base de datos (`DataIntegrityViolationException` / HTTP 409).
+
+### NA-013
+Cobertura de tests `@WebMvcTest` vs `@ExtendWith(MockitoExtension.class)` (ServiceTest) para deserialización vs lógica de negocio: en tests `@WebMvcTest` con `@MockitoBean`, el mock de `ClienteService` no ejecuta la lógica de negocio del servicio; por lo tanto, el test de controlador verifica el contrato HTTP y la correcta deserialización del JSON sin el campo (retornando 201 Created con el objeto retornado por el mock), mientras que la asignación real del valor por defecto debe ser verificada unitariamente en `ClienteServiceTest` asegurando que la entidad pasada a `repository.save()` posea `CondicionFiscal.RESPONSABLE_INSCRIPTO`.
+
+### NA-014
+Limpieza de inconsistencias documentales detectadas en la auditoría final de Fase 2.A:
+- Corrección del estado de `R-058` (de `Parcial` a `Aplicado`) tras completarse la migración a `BigDecimal` de coordenadas en Task 0 (`03b8137`).
+- Actualización de `R-089` para reflejar que Tasks 6-9 fueron pusheadas a `origin/main` en `da9e796`.
+- Eliminación del emoji en `REPORT.md` (línea 219) para estricta conformidad con `R-042`.
+
 ---
 
 ## Historial de Cambios
@@ -758,3 +770,4 @@ Regla operativa: los commits reales (verificables con `git show` y `Select-Strin
 | 2026-11-03 | Antigravity + Usuario | Actualización | Incorporación de R-069..R-081 tras entrevista con Papá del 03/11 (D-07 a D-14) y aprobación de las 12 decisiones técnicas de Tipo B (B1 a B12). Actualización de Requerimientos a v3.2 y Anexo II a v1.1. |
 | 2026-11-03 | Antigravity + Usuario | Actualización | Incorporación de R-082 (las 3 fuentes de verdad de Iteración 2), publicación de `docs/superpowers/research/DECISIONES-NEGOCIO.md` sanitizado (R-066) y ajuste de `total_a_cobrar_comprador` en Anexo II §4 y RF06 (sobre base commit 640fa5a). |
 | 2026-11-03 | Antigravity + Usuario | Actualización | Incorporación de R-083..R-089 y NA-007..NA-011 tras cierre de Fase 2.A (Tasks 0-8). Total 89 rulings, 11 notas de auditoría. |
+| 2026-11-03 | Fix I-01 | Actualización | Corrección de I-01 (fallback condicionFiscal en ClienteService.save). Documentación de NA-012, NA-013, NA-014. Corrección de R-058 y R-089. Fix del emoji en REPORT.md. |
