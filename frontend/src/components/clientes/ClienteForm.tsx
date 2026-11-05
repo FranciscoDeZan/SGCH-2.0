@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Cliente, CalificacionCliente } from '../../types/cliente';
+import type { Cliente, CalificacionCliente, CondicionFiscal } from '../../types/cliente';
 import { apiFetch, ApiError } from '../../api/client';
 
 export interface ClienteFormProps {
@@ -10,6 +10,8 @@ export interface ClienteFormProps {
 
 interface FormValues {
   nombreRazonSocial: string;
+  cuit: string;
+  condicionFiscal?: CondicionFiscal;
   telefono: string;
   direccion: string;
   email: string;
@@ -26,6 +28,8 @@ interface FormValues {
 export function ClienteForm({ onSuccess, onCancel, initialData }: ClienteFormProps) {
   const [formData, setFormData] = useState<FormValues>(() => ({
     nombreRazonSocial: initialData?.nombreRazonSocial ?? '',
+    cuit: initialData?.cuit ?? '',
+    condicionFiscal: initialData?.condicionFiscal,
     telefono: initialData?.telefono ?? '',
     direccion: initialData?.direccion ?? '',
     email: initialData?.email ?? '',
@@ -77,6 +81,11 @@ export function ClienteForm({ onSuccess, onCancel, initialData }: ClienteFormPro
     if (!formData.direccion.trim()) {
       validationErrors.direccion = 'La dirección es obligatoria.';
     }
+    if (formData.cuit && formData.cuit.trim() !== '') {
+      if (!/^\d{11}$/.test(formData.cuit.trim())) {
+        validationErrors.cuit = 'El CUIT debe tener exactamente 11 dígitos numéricos.';
+      }
+    }
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -95,6 +104,8 @@ export function ClienteForm({ onSuccess, onCancel, initialData }: ClienteFormPro
     const payload: Cliente = {
       ...(initialData?.id ? { id: initialData.id } : {}),
       nombreRazonSocial: formData.nombreRazonSocial.trim(),
+      cuit: formData.cuit.trim() || undefined,
+      condicionFiscal: formData.condicionFiscal,
       telefono: formData.telefono.trim(),
       direccion: formData.direccion.trim(),
       email: formData.email.trim() || undefined,
@@ -250,6 +261,61 @@ export function ClienteForm({ onSuccess, onCancel, initialData }: ClienteFormPro
               }`}
             />
             {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
+          </div>
+
+          {/* CUIT */}
+          <div>
+            <label
+              htmlFor="cuit"
+              className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1"
+            >
+              CUIT (opcional)
+            </label>
+            <input
+              id="cuit"
+              type="text"
+              name="cuit"
+              inputMode="numeric"
+              maxLength={11}
+              pattern="\d{11}"
+              value={formData.cuit}
+              onChange={handleChange}
+              placeholder="Ej: 20301112224"
+              aria-describedby={errors.cuit ? 'cuit-error' : undefined}
+              className={`w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none ${
+                errors.cuit
+                  ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500'
+                  : 'border-gray-300 focus:border-green-600 focus:ring-1 focus:ring-green-600'
+              }`}
+            />
+            {errors.cuit && (
+              <p id="cuit-error" role="alert" className="mt-1 text-xs text-red-600">
+                {errors.cuit}
+              </p>
+            )}
+          </div>
+
+          {/* Condición Fiscal */}
+          <div>
+            <label
+              htmlFor="condicionFiscal"
+              className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1"
+            >
+              Condición Fiscal
+            </label>
+            <select
+              id="condicionFiscal"
+              name="condicionFiscal"
+              value={formData.condicionFiscal ?? ''}
+              onChange={handleChange}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-green-600 focus:ring-1 focus:ring-green-600 focus:outline-none bg-white"
+            >
+              <option value="">Sin especificar</option>
+              <option value="RESPONSABLE_INSCRIPTO">Responsable Inscripto</option>
+              <option value="MONOTRIBUTISTA">Monotributista</option>
+              <option value="EXENTO">Exento</option>
+              <option value="CONSUMIDOR_FINAL">Consumidor Final</option>
+            </select>
           </div>
 
           {/* Dirección */}

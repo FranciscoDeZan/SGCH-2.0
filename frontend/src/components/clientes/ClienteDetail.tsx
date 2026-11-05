@@ -1,9 +1,14 @@
+import { useState, useEffect, useCallback } from 'react';
 import type { Cliente, CalificacionCliente } from '../../types/cliente';
+import type { OperacionResponse } from '../../types/operacion';
+import { getOperaciones } from '../../api/client';
 
 export interface ClienteDetailProps {
   cliente: Cliente;
   onVolver: () => void;
   onEditar: () => void;
+  onRegistrarOperacion?: (clienteId: string, rol: 'COMPRADOR' | 'VENDEDOR') => void;
+  onSelectOperacion?: (operacionId: string) => void;
 }
 
 const calificacionStyles: Record<CalificacionCliente, string> = {
@@ -18,7 +23,39 @@ function formatDate(dateStr?: string | null): string {
   return isNaN(d.getTime()) ? 'Sin registro' : d.toLocaleDateString('es-AR');
 }
 
-export function ClienteDetail({ cliente, onVolver, onEditar }: ClienteDetailProps) {
+export function ClienteDetail({
+  cliente,
+  onVolver,
+  onEditar,
+  onRegistrarOperacion,
+  onSelectOperacion,
+}: ClienteDetailProps) {
+  const [operaciones, setOperaciones] = useState<OperacionResponse[]>([]);
+  const [loadingOps, setLoadingOps] = useState<boolean>(true);
+  const [errorOps, setErrorOps] = useState<boolean>(false);
+
+  const fetchOperaciones = useCallback(async () => {
+    if (!cliente.id) {
+      setOperaciones([]);
+      setLoadingOps(false);
+      return;
+    }
+
+    setLoadingOps(true);
+    setErrorOps(false);
+    try {
+      const data = await getOperaciones({ clienteId: cliente.id });
+      setOperaciones(data ?? []);
+    } catch {
+      setErrorOps(true);
+    } finally {
+      setLoadingOps(false);
+    }
+  }, [cliente.id]);
+
+  useEffect(() => {
+    fetchOperaciones();
+  }, [fetchOperaciones]);
   return (
     <div className="space-y-6">
       {/* Header and Actions */}
@@ -43,21 +80,47 @@ export function ClienteDetail({ cliente, onVolver, onEditar }: ClienteDetailProp
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={onEditar}
-            className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-md font-medium text-sm transition cursor-pointer"
+            className="bg-green-700 hover:bg-green-800 text-white px-3.5 py-2 rounded-md font-medium text-sm transition cursor-pointer"
           >
             Editar Cliente
           </button>
           <button
             type="button"
-            disabled
-            title="Próximamente"
-            className="bg-gray-400 text-white px-4 py-2 rounded-md font-medium text-sm cursor-not-allowed opacity-50"
+            onClick={() => cliente.id && onRegistrarOperacion?.(cliente.id, 'COMPRADOR')}
+            className="bg-green-700 hover:bg-green-800 text-white px-3.5 py-2 rounded-md font-medium text-sm transition cursor-pointer inline-flex items-center gap-1.5"
+            aria-label="Registrar compra"
           >
-            Registrar Operación
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Registrar compra
+          </button>
+          <button
+            type="button"
+            onClick={() => cliente.id && onRegistrarOperacion?.(cliente.id, 'VENDEDOR')}
+            className="bg-blue-700 hover:bg-blue-800 text-white px-3.5 py-2 rounded-md font-medium text-sm transition cursor-pointer inline-flex items-center gap-1.5"
+            aria-label="Registrar venta"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Registrar venta
           </button>
         </div>
       </div>
@@ -136,15 +199,126 @@ export function ClienteDetail({ cliente, onVolver, onEditar }: ClienteDetailProp
         </p>
       </div>
 
-      {/* Historial de Operaciones Placeholder */}
-      <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm space-y-3">
-        <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-100 pb-2">
+      {/* Historial de Operaciones */}
+      <section
+        aria-labelledby="historial-operaciones"
+        className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm space-y-3"
+      >
+        <h3
+          id="historial-operaciones"
+          className="text-lg font-semibold text-gray-800 border-b border-gray-100 pb-2"
+        >
           Historial de Operaciones
         </h3>
-        <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500 text-sm">
-          El historial de operaciones va a estar disponible en la próxima actualización.
-        </div>
-      </div>
+
+        {loadingOps && (
+          <p role="status" className="text-sm text-gray-500 py-4 text-center">
+            Cargando operaciones...
+          </p>
+        )}
+
+        {errorOps && (
+          <div
+            role="alert"
+            className="p-4 bg-red-50 text-red-700 text-sm rounded-lg border border-red-200 flex items-center justify-between"
+          >
+            <span>Error al cargar las operaciones.</span>
+            <button
+              type="button"
+              onClick={fetchOperaciones}
+              className="font-semibold underline hover:text-red-900 cursor-pointer"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
+
+        {!loadingOps && !errorOps && operaciones.length === 0 && (
+          <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg p-6 text-center text-gray-500 text-sm">
+            Sin operaciones registradas
+          </div>
+        )}
+
+        {!loadingOps && !errorOps && operaciones.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50 text-gray-700">
+                <tr>
+                  <th scope="col" className="px-4 py-2.5 text-left font-semibold">
+                    Fecha
+                  </th>
+                  <th scope="col" className="px-4 py-2.5 text-left font-semibold">
+                    Tipo
+                  </th>
+                  <th scope="col" className="px-4 py-2.5 text-left font-semibold">
+                    Categoría
+                  </th>
+                  <th scope="col" className="px-4 py-2.5 text-right font-semibold">
+                    Kg Netos
+                  </th>
+                  <th scope="col" className="px-4 py-2.5 text-right font-semibold">
+                    Monto
+                  </th>
+                  <th scope="col" className="px-4 py-2.5 text-center font-semibold">
+                    Estado
+                  </th>
+                  <th scope="col" className="px-4 py-2.5 text-center font-semibold">
+                    Acción
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {operaciones.map((op) => {
+                  const tipo = op.compradorId === cliente.id ? 'Compra' : 'Venta';
+                  const monto = op.calculo?.subtotalGanado ?? op.kgNeto * op.precioKgFacturado;
+                  return (
+                    <tr key={op.id} className="hover:bg-gray-50 transition">
+                      <td className="px-4 py-2.5 whitespace-nowrap text-gray-900">
+                        {formatDate(op.fechaOperacion)}
+                      </td>
+                      <td className="px-4 py-2.5 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
+                            tipo === 'Compra'
+                              ? 'bg-green-50 text-green-700 border-green-200'
+                              : 'bg-blue-50 text-blue-700 border-blue-200'
+                          }`}
+                        >
+                          {tipo}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 whitespace-nowrap text-gray-700">
+                        {op.categoria}
+                      </td>
+                      <td className="px-4 py-2.5 whitespace-nowrap text-right font-mono text-gray-900">
+                        {op.kgNeto.toLocaleString('es-AR')} kg
+                      </td>
+                      <td className="px-4 py-2.5 whitespace-nowrap text-right font-mono text-gray-900 font-medium">
+                        ${monto.toLocaleString('es-AR')}
+                      </td>
+                      <td className="px-4 py-2.5 whitespace-nowrap text-center">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-300 font-medium">
+                          {op.estadoLiquidacion}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 whitespace-nowrap text-center">
+                        <button
+                          type="button"
+                          onClick={() => onSelectOperacion?.(op.id)}
+                          aria-label={`Ver ${op.id}`}
+                          className="text-xs text-green-700 hover:text-green-800 font-semibold px-2 py-1 rounded hover:bg-green-50 transition cursor-pointer"
+                        >
+                          Ver
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

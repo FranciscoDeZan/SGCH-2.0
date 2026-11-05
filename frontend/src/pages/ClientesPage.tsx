@@ -12,6 +12,8 @@ export type Vista = 'lista' | 'detalle' | 'alta' | 'edicion';
 export interface ClientesPageProps {
   initialVista?: Vista;
   initialSelectedCliente?: Cliente | null;
+  onRegistrarOperacion?: (clienteId: string, rol: 'COMPRADOR' | 'VENDEDOR') => void;
+  onSelectOperacion?: (operacionId: string) => void;
 }
 
 function EmptyFallback({ onVolver }: { onVolver: () => void }) {
@@ -29,7 +31,12 @@ function EmptyFallback({ onVolver }: { onVolver: () => void }) {
   );
 }
 
-export function ClientesPage({ initialVista = 'lista', initialSelectedCliente = null }: ClientesPageProps = {}) {
+export function ClientesPage({
+  initialVista = 'lista',
+  initialSelectedCliente = null,
+  onRegistrarOperacion,
+  onSelectOperacion,
+}: ClientesPageProps = {}) {
   const [vista, setVista] = useState<Vista>(initialVista);
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(initialSelectedCliente);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -94,6 +101,8 @@ export function ClientesPage({ initialVista = 'lista', initialSelectedCliente = 
           cliente={selectedCliente}
           onVolver={() => setVista('lista')}
           onEditar={() => setVista('edicion')}
+          onRegistrarOperacion={onRegistrarOperacion}
+          onSelectOperacion={onSelectOperacion}
         />
       );
     }

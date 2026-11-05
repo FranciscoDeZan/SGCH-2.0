@@ -580,4 +580,59 @@ describe('ClienteForm', () => {
     expect(sentBody.latitud).toBeUndefined();
     expect(sentBody.longitud).toBeUndefined();
   });
+
+  it('testCreateClienteWithCuitAndCondicionFiscal: creates client including cuit and condicionFiscal in payload', async () => {
+    vi.mocked(client.apiFetch).mockResolvedValueOnce({ id: 'new-client-id' });
+
+    render(<ClienteForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
+
+    fireEvent.change(screen.getByLabelText(/nombre \/ razón social \*/i), {
+      target: { value: 'Agropecuaria Las Lilas' },
+    });
+    fireEvent.change(screen.getByLabelText(/teléfono \*/i), {
+      target: { value: '3415552233' },
+    });
+    fireEvent.change(screen.getByLabelText(/dirección \*/i), {
+      target: { value: 'Ruta 11 Km 45' },
+    });
+    fireEvent.change(screen.getByLabelText(/cuit/i), {
+      target: { value: '20301112224' },
+    });
+    fireEvent.change(screen.getByLabelText(/condición fiscal/i), {
+      target: { value: 'MONOTRIBUTISTA' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /guardar cliente/i }));
+
+    await waitFor(() => {
+      expect(client.apiFetch).toHaveBeenCalledTimes(1);
+    });
+
+    const callArgs = vi.mocked(client.apiFetch).mock.calls[0];
+    const sentBody = JSON.parse(callArgs[1]?.body as string);
+    expect(sentBody.cuit).toBe('20301112224');
+    expect(sentBody.condicionFiscal).toBe('MONOTRIBUTISTA');
+  });
+
+  it('testInvalidCuitRejected: displays validation error and blocks submission if cuit is not 11 digits', async () => {
+    render(<ClienteForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />);
+
+    fireEvent.change(screen.getByLabelText(/nombre \/ razón social \*/i), {
+      target: { value: 'Agropecuaria Las Lilas' },
+    });
+    fireEvent.change(screen.getByLabelText(/teléfono \*/i), {
+      target: { value: '3415552233' },
+    });
+    fireEvent.change(screen.getByLabelText(/dirección \*/i), {
+      target: { value: 'Ruta 11 Km 45' },
+    });
+    fireEvent.change(screen.getByLabelText(/cuit/i), {
+      target: { value: '12345' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /guardar cliente/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/11 dígitos/i);
+    expect(client.apiFetch).not.toHaveBeenCalled();
+  });
 });

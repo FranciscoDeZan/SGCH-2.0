@@ -3,13 +3,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ClientesPage } from './ClientesPage';
 import * as client from '../api/client';
 
-vi.mock('../api/client', () => ({
-  apiFetch: vi.fn().mockResolvedValue([]),
-}));
+vi.mock('../api/client', async () => {
+  const actual = await vi.importActual<typeof client>('../api/client');
+  return {
+    ...actual,
+    apiFetch: vi.fn().mockResolvedValue([]),
+    getOperaciones: vi.fn().mockResolvedValue([]),
+  };
+});
 
 describe('ClientesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(client.getOperaciones).mockResolvedValue([]);
   });
 
   it('calls apiFetch("/clientes") only once on initial render of ClientesPage', async () => {
@@ -314,6 +320,30 @@ describe('ClientesPage', () => {
     await waitFor(() => {
       expect(screen.getByText('✅ Registrado: no atendió')).toBeInTheDocument();
     });
+  });
+
+  it('testOnRegistrarOperacionPropagadoDesdeDetailAlPadre: propaga onRegistrarOperacion desde ClienteDetail al handler del padre', async () => {
+    const mockOnRegistrar = vi.fn();
+    const mockCliente = {
+      id: 'c-test-123',
+      nombreRazonSocial: 'Cabaña San Antonio',
+      telefono: '3415556677',
+      direccion: 'Ruta 9 Km 20',
+    };
+
+    render(
+      <ClientesPage
+        initialVista="detalle"
+        initialSelectedCliente={mockCliente}
+        onRegistrarOperacion={mockOnRegistrar}
+      />
+    );
+
+    const btnCompra = screen.getByRole('button', { name: /registrar compra/i });
+    fireEvent.click(btnCompra);
+
+    expect(mockOnRegistrar).toHaveBeenCalledTimes(1);
+    expect(mockOnRegistrar).toHaveBeenCalledWith('c-test-123', 'COMPRADOR');
   });
 });
 
