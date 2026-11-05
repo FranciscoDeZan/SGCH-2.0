@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { OperacionResponse, OperacionFiltros } from '../types/operacion';
+import type { OperacionResponse, OperacionFiltros, OperacionRequest } from '../types/operacion';
 import type { Cliente } from '../types/cliente';
 import { getOperaciones, getClientes } from '../api/client';
 import { OperacionList } from '../components/operaciones/OperacionList';
+import { OperacionForm } from '../components/operaciones/OperacionForm';
 import { Toast } from '../components/ui/Toast';
 
 export type VistaOperacion = 'lista' | 'detalle' | 'alta' | 'edicion';
@@ -10,6 +11,7 @@ export type VistaOperacion = 'lista' | 'detalle' | 'alta' | 'edicion';
 export interface OperacionesPageProps {
   initialVista?: VistaOperacion;
   initialSelectedOperacion?: OperacionResponse | null;
+  initialDraft?: Partial<OperacionRequest> | null;
 }
 
 function EmptyOperacionFallback({ onVolver }: { onVolver: () => void }) {
@@ -30,6 +32,7 @@ function EmptyOperacionFallback({ onVolver }: { onVolver: () => void }) {
 export function OperacionesPage({
   initialVista = 'lista',
   initialSelectedOperacion = null,
+  initialDraft = null,
 }: OperacionesPageProps = {}) {
   const [vista, setVista] = useState<VistaOperacion>(initialVista);
   const [selectedOperacion, setSelectedOperacion] = useState<OperacionResponse | null>(
@@ -149,19 +152,19 @@ export function OperacionesPage({
 
     if (vista === 'alta') {
       return (
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-800">Nueva Operación</h2>
-            <button
-              type="button"
-              onClick={() => setVista('lista')}
-              className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 transition cursor-pointer"
-            >
-              Cancelar
-            </button>
-          </div>
-          <p className="text-gray-500">Formulario de alta próximamente (Fase 2.B Task 4.2).</p>
-        </div>
+        <OperacionForm
+          mode="create"
+          clientes={clientes}
+          operaciones={operaciones}
+          initialDraft={initialDraft}
+          onSuccess={(savedOp) => {
+            fetchData(filtros);
+            setSelectedOperacion(savedOp);
+            setVista('lista');
+            setToastMessage('Operación guardada exitosamente');
+          }}
+          onCancel={() => setVista('lista')}
+        />
       );
     }
 
@@ -170,21 +173,19 @@ export function OperacionesPage({
         return <EmptyOperacionFallback onVolver={() => setVista('lista')} />;
       }
       return (
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-800">
-              Editar Operación {selectedOperacion.id}
-            </h2>
-            <button
-              type="button"
-              onClick={() => setVista('detalle')}
-              className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 transition cursor-pointer"
-            >
-              Cancelar
-            </button>
-          </div>
-          <p className="text-gray-500">Formulario de edición próximamente (Fase 2.B Task 4.2).</p>
-        </div>
+        <OperacionForm
+          mode="edit"
+          initialOperacion={selectedOperacion}
+          clientes={clientes}
+          operaciones={operaciones}
+          onSuccess={(savedOp) => {
+            fetchData(filtros);
+            setSelectedOperacion(savedOp);
+            setVista('detalle');
+            setToastMessage('Cambios guardados exitosamente');
+          }}
+          onCancel={() => setVista('detalle')}
+        />
       );
     }
   };
