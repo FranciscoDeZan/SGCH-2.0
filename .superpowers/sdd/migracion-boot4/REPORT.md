@@ -289,7 +289,7 @@ npm --prefix frontend test
   - `2746be7`: feat(operaciones): add OperacionDetail, CobrosPanel and copy summary helper
   - `24d3a2d`: feat(operaciones): add OperacionesMobileCopilot with voice dictation prefill
   - `ef51eb9`: feat(clientes): enable operaciones nav from ClienteDetail and add cuit + condicionFiscal to ClienteForm
-  - `1ddf3d6`: test(operaciones): add E2E lifecycle tests, accessibility checks and close Fase 2.B docs
+  - `74b1371`: test(operaciones): add E2E lifecycle tests, accessibility checks and close Fase 2.B docs
 - **Tasks ejecutadas:** 8 tasks del plan aprobado (subdividida Task 4 en 4.1 y 4.2).
 - **Tests totales:**
   - Backend: 157/157 verdes (0 failures, 0 errors, 0 skipped, 0 archivos modificados en backend/).
@@ -299,3 +299,14 @@ npm --prefix frontend test
 - **Accesibilidad y UX:** Roles semánticos completos, labels explícitos en todos los inputs, soporte de teclado, toasts informativos de éxito, y cero emojis en código y UI (R-042).
 - **Integración cross-page:** Navegación fluida entre Clientes y Operaciones con cliente preseleccionado para compra y venta, historial de operaciones en tiempo real en la ficha del cliente, y prellenado por dictado de voz en móvil.
 - **Cierre:** Iteración 2 finalizada exitosamente.
+
+### Deuda técnica acumulada de Fase 2.B (post-MVP)
+
+Estos findings son cosméticos y no bloquean el cierre de Iteración 2. Se documentan para priorización en el próximo bloque:
+
+- **Task 4.2:** `OperacionForm.tsx` con 1346 líneas. Extraer subcomponentes (FieldGroup, PreviewPanel, CopySelector) a archivos separados en Task 9 de refactor o post-MVP.
+- **Task 4.2:** `precioEsFinal` en payload (drift menor, no bug funcional). El backend lo acepta como redundancia con `modalidadPrecio`. Eliminar del payload requiere refactor de form + re-run 137 tests. Diferido.
+- **Task 4.2:** `initialDraft` cableado en `OperacionesPage` (ya activado por Task 6/7). Funcional correctamente.
+- **Task 5:** `formatMoney`/`formatDate` inline en `OperacionDetail` y `CobrosPanel`. Extraer a `frontend/src/utils/formatters.ts` post-MVP.
+- **Task 7:** `ClienteDetail.tsx` creció +202 líneas por historial de operaciones inline. Evaluar extracción a subcomponente en post-MVP.
+- **Fase 2.B general:** 15 archivos nuevos + 5 modificados en `frontend/src/` para cubrir Operaciones. Evaluar estructura de carpetas (`components/operaciones/`) si crece en Iteración 3.
