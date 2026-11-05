@@ -7,8 +7,20 @@ import {
   createCliente,
   updateCliente,
   deleteCliente,
+  getOperaciones,
+  getOperacionById,
+  createOperacion,
+  updateOperacion,
+  getCobrosByOperacion,
+  createCobro,
 } from './client';
 import type { Cliente } from '../types/cliente';
+import type {
+  OperacionResponse,
+  OperacionRequest,
+  OperacionFiltros,
+} from '../types/operacion';
+import type { CobroResponse, CobroRequest } from '../types/cobro';
 
 describe('apiFetch & client service', () => {
   const mockFetch = vi.fn();
@@ -275,6 +287,164 @@ describe('apiFetch & client service', () => {
           method: 'DELETE',
         })
       );
+    });
+  });
+
+  describe('operaciones & cobros helpers', () => {
+    it('getOperaciones with query params calls GET /api/v1/operaciones?... and normalizes dates', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve(JSON.stringify([])),
+      });
+
+      const filtros: OperacionFiltros = {
+        circuito: 'DIRECTO',
+        clienteId: 'cliente-123',
+        estado: 'PENDIENTE',
+        fechaDesde: '2026-11-01',
+        fechaHasta: '2026-11-05',
+      };
+
+      const result = await getOperaciones(filtros);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/operaciones?circuito=DIRECTO&clienteId=cliente-123&estado=PENDIENTE&fechaDesde=2026-11-01T00%3A00%3A00&fechaHasta=2026-11-05T23%3A59%3A59',
+        expect.anything()
+      );
+      expect(result).toEqual([]);
+
+      // Test without filters
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve(JSON.stringify([])),
+      });
+
+      await getOperaciones();
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/operaciones', expect.anything());
+    });
+
+    it('getOperacionById calls GET /api/v1/operaciones/:id', async () => {
+      const mockOp = { id: 'op-123', subtotalGanado: 1000 } as unknown as OperacionResponse;
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve(JSON.stringify(mockOp)),
+      });
+
+      const result = await getOperacionById('op-123');
+
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/operaciones/op-123', expect.anything());
+      expect(result).toEqual(mockOp);
+    });
+
+    it('createOperacion calls POST /api/v1/operaciones with body', async () => {
+      const mockOpReq: OperacionRequest = {
+        fechaOperacion: '2026-11-04T10:00:00',
+        modalidadCircuito: 'DIRECTO',
+        compradorId: 'comp-1',
+        vendedorId: 'vend-1',
+        categoria: 'FAENA',
+        kgNeto: 1000,
+        precioKgFacturado: 500,
+        modalidadPrecio: 'NETO',
+        formaPago: 'CONTADO',
+      };
+      const mockOpRes = { id: 'op-created', ...mockOpReq } as unknown as OperacionResponse;
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        text: () => Promise.resolve(JSON.stringify(mockOpRes)),
+      });
+
+      const result = await createOperacion(mockOpReq);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/operaciones',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify(mockOpReq),
+        })
+      );
+      expect(result).toEqual(mockOpRes);
+    });
+
+    it('updateOperacion calls PUT /api/v1/operaciones/:id with body', async () => {
+      const mockOpReq: OperacionRequest = {
+        fechaOperacion: '2026-11-04T10:00:00',
+        modalidadCircuito: 'DIRECTO',
+        compradorId: 'comp-1',
+        vendedorId: 'vend-1',
+        categoria: 'FAENA',
+        kgNeto: 1200,
+        precioKgFacturado: 550,
+        modalidadPrecio: 'NETO',
+        formaPago: 'CONTADO',
+      };
+      const mockOpRes = { id: 'op-123', ...mockOpReq } as unknown as OperacionResponse;
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve(JSON.stringify(mockOpRes)),
+      });
+
+      const result = await updateOperacion('op-123', mockOpReq);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/operaciones/op-123',
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify(mockOpReq),
+        })
+      );
+      expect(result).toEqual(mockOpRes);
+    });
+
+    it('getCobrosByOperacion and createCobro call /api/v1/cobros endpoints', async () => {
+      const mockCobroRes = { id: 'cobro-1', operacionId: 'op-123', monto: 5000 } as unknown as CobroResponse;
+
+      // getCobrosByOperacion
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve(JSON.stringify([mockCobroRes])),
+      });
+
+      const cobros = await getCobrosByOperacion('op-123');
+
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/cobros?operacionId=op-123', expect.anything());
+      expect(cobros).toEqual([mockCobroRes]);
+
+      // createCobro
+      const mockCobroReq: CobroRequest = {
+        operacionId: 'op-123',
+        clienteId: 'cli-1',
+        tipoMovimiento: 'COBRO_COMPRADOR',
+        fechaMovimiento: '2026-11-05',
+        monto: 5000,
+        medioPago: 'TRANSFERENCIA',
+        documentado: true,
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        text: () => Promise.resolve(JSON.stringify(mockCobroRes)),
+      });
+
+      const created = await createCobro(mockCobroReq);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/cobros',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify(mockCobroReq),
+        })
+      );
+      expect(created).toEqual(mockCobroRes);
     });
   });
 });

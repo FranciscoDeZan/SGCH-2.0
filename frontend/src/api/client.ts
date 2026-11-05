@@ -1,4 +1,10 @@
 import type { Cliente } from '../types/cliente';
+import type {
+  OperacionResponse,
+  OperacionRequest,
+  OperacionFiltros,
+} from '../types/operacion';
+import type { CobroResponse, CobroRequest } from '../types/cobro';
 
 export class ApiError extends Error {
   status: number;
@@ -72,5 +78,68 @@ export const updateCliente = async (id: string, cliente: Cliente): Promise<Clien
 export const deleteCliente = async (id: string): Promise<void> => {
   await apiFetch<void>(`/clientes/${id}`, {
     method: 'DELETE',
+  });
+};
+
+// Operaciones API Helpers
+export const getOperaciones = async (filtros?: OperacionFiltros): Promise<OperacionResponse[]> => {
+  const params = new URLSearchParams();
+
+  if (filtros) {
+    if (filtros.circuito) {
+      params.append('circuito', filtros.circuito);
+    }
+    if (filtros.clienteId) {
+      params.append('clienteId', filtros.clienteId);
+    }
+    if (filtros.estado) {
+      params.append('estado', filtros.estado);
+    }
+    if (filtros.fechaDesde) {
+      const fechaDesdeNorm = filtros.fechaDesde.includes('T')
+        ? filtros.fechaDesde
+        : `${filtros.fechaDesde}T00:00:00`;
+      params.append('fechaDesde', fechaDesdeNorm);
+    }
+    if (filtros.fechaHasta) {
+      const fechaHastaNorm = filtros.fechaHasta.includes('T')
+        ? filtros.fechaHasta
+        : `${filtros.fechaHasta}T23:59:59`;
+      params.append('fechaHasta', fechaHastaNorm);
+    }
+  }
+
+  const query = params.toString();
+  const endpoint = query ? `/operaciones?${query}` : '/operaciones';
+  return apiFetch<OperacionResponse[]>(endpoint);
+};
+
+export const getOperacionById = async (id: string): Promise<OperacionResponse> => {
+  return apiFetch<OperacionResponse>(`/operaciones/${encodeURIComponent(id)}`);
+};
+
+export const createOperacion = async (operacion: OperacionRequest): Promise<OperacionResponse> => {
+  return apiFetch<OperacionResponse>('/operaciones', {
+    method: 'POST',
+    body: JSON.stringify(operacion),
+  });
+};
+
+export const updateOperacion = async (id: string, operacion: OperacionRequest): Promise<OperacionResponse> => {
+  return apiFetch<OperacionResponse>(`/operaciones/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(operacion),
+  });
+};
+
+// Cobros API Helpers
+export const getCobrosByOperacion = async (operacionId: string): Promise<CobroResponse[]> => {
+  return apiFetch<CobroResponse[]>(`/cobros?operacionId=${encodeURIComponent(operacionId)}`);
+};
+
+export const createCobro = async (cobro: CobroRequest): Promise<CobroResponse> => {
+  return apiFetch<CobroResponse>('/cobros', {
+    method: 'POST',
+    body: JSON.stringify(cobro),
   });
 };
