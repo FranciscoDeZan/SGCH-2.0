@@ -64,3 +64,14 @@ Ruling 6: Docker Desktop operativo. ClienteRepositoryTest corre con Testcontaine
 - Migración /api/v1/clientes en paralelo a legacy (R-062).
 - Auditoría intermedia Tasks 0-5 ejecutada: 0 críticos, 0 importantes, 8 menores (van a Task 9 deuda técnica).
 - Próximo: Fase 2.B (frontend de Operaciones).
+
+## 2026-11-04 — Cierre Bloque 1 (Saneamiento Pre-Fase 2.B)
+
+- Tasks 1-4 del plan 2026-11-04-bloque-1-saneamiento completadas + micro-fix.
+- 157/157 tests backend verdes. 75/75 tests frontend verdes.
+- 10 deudas A-01 a A-10 resueltas.
+- Contrato JSON de /api/clientes y /api/v1/clientes verificado isomórfico.
+- N+1 eliminado: 103 queries → 1 query en findAll de 100 operaciones.
+- Commit final: 486c7ee (pusheado a origin/main).
+- 5 commits: c8724ee (Task 1), dd0ca56 (Task 2), 81b6052 (Task 3), ccac5f4 (Task 4), 486c7ee (micro-fix de robustez).
+- Próximo: auditoría final del Bloque 1 + Fase 2.B (frontend Operaciones).

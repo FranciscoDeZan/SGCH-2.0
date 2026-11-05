@@ -8,7 +8,7 @@
 - **Modelo de ejecución:** Argon High para planificación; Flash High para ejecución de Tasks 1 a 4
 - **Total tasks:** 4 (Task 1 a Task 4)
 - **Duración estimada:** 1.5 a 2 semanas (a ritmo de 10 h/semana; 4 sesiones ejecutables con checkpoints)
-- **Estado:** APROBADO (2026-11-04)
+- **Estado:** DONE (2026-11-04). Bloque 1 completado y verificado. 157/157 tests backend verdes. Último commit: 486c7ee.
 
 ---
 

@@ -251,3 +251,27 @@ npm --prefix frontend test
 - **Smoke test E2E:** 9/9 curls OK (3 POST operaciones por circuito, list, 404 ProblemDetail, POST cobro, GET cobros, GET v1 clientes, GET legacy clientes).
 - **Deuda técnica pendiente:** ver NA-009, NA-010, NA-011, y findings M-01 a M-08 de la auditoría intermedia.
 - **Fase 2.B (frontend operaciones):** siguiente.
+
+## Bloque 1 — Saneamiento Pre-Fase 2.B (A-01 a A-10)
+
+- **Estado:** COMPLETADO (2026-11-04).
+- **Commits pusheados:** c8724ee, dd0ca56, 81b6052, ccac5f4, 486c7ee.
+- **Tasks ejecutadas:** 4 tasks del plan aprobado + 1 micro-fix de robustez.
+- **Tests totales:** 157/157 backend verdes (0 failures, 0 errors, 0 skipped).
+- **Tests frontend:** 75/75 verdes (sin tocar frontend/).
+- **Warnings de compilación:** 0.
+- **Deudas resueltas:**
+  - A-01: ClienteController desacoplado con ClienteRequest/Response/Mapper
+  - A-02: TODO eliminado en ClienteService.update
+  - A-03: N+1 eliminado con @EntityGraph + @OneToMany (103 queries → 1 query)
+  - A-04: List raw eliminados con @Captor tipados
+  - A-05: fecha_base_plazo blindado con validación cross-cuota (Opción c)
+  - A-06: V3 UNIQUE(cuit) + @Column(unique=true)
+  - A-07: GlobalExceptionHandler con 4 mensajes específicos + fallback
+  - A-08: estadoLiquidacion formalizado (create fuerza PENDIENTE, update preserva si null)
+  - A-09: @PastOrPresent en fechaOperacion
+  - A-10: 3 tests nuevos de PROPIA (service no requirió cambios, lógica ya canónica)
+- **Contrato JSON isomórfico:** test específico + 75/75 Vitest verdes.
+- **Deuda residual:** fixture de mock response en OperacionControllerTest migrado a fechas dinámicas (Task 4 micro-fix). Anotar como NA-018 candidato si en el futuro se encuentra más deuda semántica en fixtures.
+- **Rulings agregados:** R-096 (AGENTS.md router) + NA-015, NA-016, NA-017.
+- **Fase 2.B (frontend Operaciones):** siguiente.
