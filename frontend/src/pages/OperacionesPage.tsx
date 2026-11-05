@@ -5,6 +5,7 @@ import { getOperaciones, getClientes, getOperacionById } from '../api/client';
 import { OperacionList } from '../components/operaciones/OperacionList';
 import { OperacionForm } from '../components/operaciones/OperacionForm';
 import { OperacionDetail } from '../components/operaciones/OperacionDetail';
+import { OperacionesMobileCopilot } from '../components/operaciones/OperacionesMobileCopilot';
 import { Toast } from '../components/ui/Toast';
 
 export type VistaOperacion = 'lista' | 'detalle' | 'alta' | 'edicion';
@@ -38,6 +39,9 @@ export function OperacionesPage({
   const [vista, setVista] = useState<VistaOperacion>(initialVista);
   const [selectedOperacion, setSelectedOperacion] = useState<OperacionResponse | null>(
     initialSelectedOperacion
+  );
+  const [draftOperacion, setDraftOperacion] = useState<Partial<OperacionRequest> | null>(
+    initialDraft
   );
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -90,20 +94,45 @@ export function OperacionesPage({
     if (vista === 'lista') {
       return (
         <div className="space-y-4">
-          <OperacionList
-            operaciones={operaciones}
-            clientes={clientes}
-            loading={loading}
-            error={error}
-            initialFiltros={filtros}
-            onRefetch={() => fetchOperacionesOnly(filtros)}
-            onSelectOperacion={(op: OperacionResponse) => {
-              setSelectedOperacion(op);
-              setVista('detalle');
-            }}
-            onNuevaOperacion={() => setVista('alta')}
-            onFilterChange={handleFilterChange}
-          />
+          <div className="md:hidden">
+            <OperacionesMobileCopilot
+              operaciones={operaciones}
+              loading={loading}
+              error={error}
+              onPrellenarAlta={(draft) => {
+                setDraftOperacion(draft);
+                setVista('alta');
+              }}
+              onSelectOperacion={(op: OperacionResponse) => {
+                setSelectedOperacion(op);
+                setVista('detalle');
+              }}
+              onNuevaOperacionManual={() => {
+                setDraftOperacion(null);
+                setVista('alta');
+              }}
+              onRefetch={() => fetchOperacionesOnly(filtros)}
+            />
+          </div>
+          <div className="hidden md:block">
+            <OperacionList
+              operaciones={operaciones}
+              clientes={clientes}
+              loading={loading}
+              error={error}
+              initialFiltros={filtros}
+              onRefetch={() => fetchOperacionesOnly(filtros)}
+              onSelectOperacion={(op: OperacionResponse) => {
+                setSelectedOperacion(op);
+                setVista('detalle');
+              }}
+              onNuevaOperacion={() => {
+                setDraftOperacion(null);
+                setVista('alta');
+              }}
+              onFilterChange={handleFilterChange}
+            />
+          </div>
         </div>
       );
     }
@@ -133,14 +162,18 @@ export function OperacionesPage({
           mode="create"
           clientes={clientes}
           operaciones={operaciones}
-          initialDraft={initialDraft}
+          initialDraft={draftOperacion}
           onSuccess={(savedOp) => {
             fetchData(filtros);
             setSelectedOperacion(savedOp);
+            setDraftOperacion(null);
             setVista('lista');
             setToastMessage('Operación guardada exitosamente');
           }}
-          onCancel={() => setVista('lista')}
+          onCancel={() => {
+            setDraftOperacion(null);
+            setVista('lista');
+          }}
         />
       );
     }
