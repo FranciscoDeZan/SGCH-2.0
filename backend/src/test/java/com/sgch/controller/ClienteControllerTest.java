@@ -98,7 +98,45 @@ public class ClienteControllerTest {
                .andExpect(status().isConflict())
                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                .andExpect(jsonPath("$.status").value(409))
-               .andExpect(jsonPath("$.detail").value("Error de integridad de datos (ej. teléfono duplicado)"));
+               .andExpect(jsonPath("$.detail").value("Error de integridad de datos (ej. teléfono o CUIT duplicado)"));
+    }
+
+    @Test
+    public void testDuplicateTelefonoReturnsSpecificConflictDetail() throws Exception {
+        when(clienteService.save(any(Cliente.class)))
+                .thenThrow(new DataIntegrityViolationException("Duplicate entry '3415551234' for key 'clientes.telefono'"));
+        ClienteRequest req = new ClienteRequest();
+        req.setNombreRazonSocial("A"); req.setTelefono("3415551234"); req.setDireccion("A");
+        mockMvc.perform(post("/api/clientes").contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(req)))
+               .andExpect(status().isConflict())
+               .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+               .andExpect(jsonPath("$.status").value(409))
+               .andExpect(jsonPath("$.detail").value("Ya existe un cliente registrado con ese teléfono"));
+    }
+
+    @Test
+    public void testDuplicateCuitReturnsSpecificConflictDetail() throws Exception {
+        when(clienteService.save(any(Cliente.class)))
+                .thenThrow(new DataIntegrityViolationException("Duplicate entry '20301112224' for key 'clientes.uk_clientes_cuit'"));
+        ClienteRequest req = new ClienteRequest();
+        req.setNombreRazonSocial("A"); req.setTelefono("123"); req.setDireccion("A");
+        mockMvc.perform(post("/api/clientes").contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(req)))
+               .andExpect(status().isConflict())
+               .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+               .andExpect(jsonPath("$.status").value(409))
+               .andExpect(jsonPath("$.detail").value("Ya existe un cliente registrado con ese CUIT"));
+    }
+
+    @Test
+    public void testForeignKeyViolationOnDeleteReturnsSpecificConflictDetail() throws Exception {
+        doThrow(new DataIntegrityViolationException("Cannot delete or update a parent row: a foreign key constraint fails (fk_operaciones_comprador)"))
+                .when(clienteService).delete("1");
+
+        mockMvc.perform(delete("/api/v1/clientes/1"))
+               .andExpect(status().isConflict())
+               .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+               .andExpect(jsonPath("$.status").value(409))
+               .andExpect(jsonPath("$.detail").value("No se puede completar la operación porque el registro tiene datos asociados"));
     }
 
     @Test

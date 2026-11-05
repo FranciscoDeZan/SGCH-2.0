@@ -405,4 +405,58 @@ public class OperacionServiceTest {
         assertThat(guardadas).hasSize(1);
         assertThat(guardadas.get(0).getDiasDescalceVendedor()).isEqualTo(7);
     }
+
+    @Test
+    void testCreateYUpdateConCuotasFechaBasePlazoInconsistente_lanzaIllegalArgumentException() {
+        CuotaOperacionRequest cuota1 = new CuotaOperacionRequest();
+        cuota1.setNumeroCuota(1);
+        cuota1.setFechaBasePlazo(FechaBasePlazo.CARGA);
+        cuota1.setDiasPlazoComprador(30);
+        cuota1.setMontoCuota(new BigDecimal("500000.00"));
+
+        CuotaOperacionRequest cuota2 = new CuotaOperacionRequest();
+        cuota2.setNumeroCuota(2);
+        cuota2.setFechaBasePlazo(FechaBasePlazo.REMATE);
+        cuota2.setDiasPlazoComprador(60);
+        cuota2.setMontoCuota(new BigDecimal("500000.00"));
+
+        requestBase.setCuotas(List.of(cuota1, cuota2));
+
+        when(clienteRepository.findById("comp-1")).thenReturn(Optional.of(comprador));
+        when(clienteRepository.findById("vend-1")).thenReturn(Optional.of(vendedor));
+
+        assertThatThrownBy(() -> operacionService.create(requestBase))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("fecha base de plazo");
+
+        Operacion opExistente = new Operacion();
+        opExistente.setId("op-1");
+        when(operacionRepository.findById("op-1")).thenReturn(Optional.of(opExistente));
+
+        assertThatThrownBy(() -> operacionService.update("op-1", requestBase))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("fecha base de plazo");
+
+        // Caso borde: cuota 1 con null (equivale a CARGA) y cuota 2 con CARGA explícita -> debe permitir
+        CuotaOperacionRequest cuotaDefaultCarga = new CuotaOperacionRequest();
+        cuotaDefaultCarga.setNumeroCuota(1);
+        cuotaDefaultCarga.setFechaBasePlazo(null);
+        cuotaDefaultCarga.setDiasPlazoComprador(30);
+        cuotaDefaultCarga.setMontoCuota(new BigDecimal("500000.00"));
+
+        CuotaOperacionRequest cuotaExplicitaCarga = new CuotaOperacionRequest();
+        cuotaExplicitaCarga.setNumeroCuota(2);
+        cuotaExplicitaCarga.setFechaBasePlazo(FechaBasePlazo.CARGA);
+        cuotaExplicitaCarga.setDiasPlazoComprador(60);
+        cuotaExplicitaCarga.setMontoCuota(new BigDecimal("500000.00"));
+
+        requestBase.setCuotas(List.of(cuotaDefaultCarga, cuotaExplicitaCarga));
+
+        when(operacionRepository.save(any(Operacion.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(cuotaOperacionRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(calculadoraFinancieraService.calcular(any(Operacion.class))).thenReturn(crearCalculoResultadoDummy());
+
+        OperacionResponse response = operacionService.create(requestBase);
+        assertThat(response).isNotNull();
+    }
 }

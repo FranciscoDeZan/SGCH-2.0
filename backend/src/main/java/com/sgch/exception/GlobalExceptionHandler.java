@@ -32,14 +32,37 @@ public class GlobalExceptionHandler {
 
     /**
      * Maneja violaciones de restricciones de integridad de base de datos (HTTP 409).
-     * Comúnmente lanzado al violar unicidad (ej. número de teléfono duplicado).
+     * Mapea causas específicas (unicidad de teléfono, CUIT, cuotas o claves foráneas)
+     * a mensajes semánticos para el usuario bajo RFC 7807/9457.
      *
      * @param ex excepción de integridad de datos capturada
      * @return objeto {@link ProblemDetail} con status 409 Conflict
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ProblemDetail handleDataIntegrity(DataIntegrityViolationException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "Error de integridad de datos (ej. teléfono duplicado)");
+        String detail = mapDataIntegrityDetail(ex);
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, detail);
+    }
+
+    private String mapDataIntegrityDetail(DataIntegrityViolationException ex) {
+        Throwable cause = ex.getMostSpecificCause();
+        String msg = (cause != null && cause.getMessage() != null)
+                ? cause.getMessage().toLowerCase()
+                : "";
+
+        if (msg.contains("telefono")) {
+            return "Ya existe un cliente registrado con ese teléfono";
+        }
+        if (msg.contains("uk_clientes_cuit") || msg.contains("cuit")) {
+            return "Ya existe un cliente registrado con ese CUIT";
+        }
+        if (msg.contains("uk_cuota_operacion_numero")) {
+            return "Ya existe una cuota con ese número para la operación";
+        }
+        if (msg.contains("foreign key") || msg.contains("fk_")) {
+            return "No se puede completar la operación porque el registro tiene datos asociados";
+        }
+        return "Error de integridad de datos (ej. teléfono o CUIT duplicado)";
     }
 
     /**

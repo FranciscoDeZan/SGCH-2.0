@@ -236,6 +236,20 @@ public class OperacionService {
                 throw new IllegalArgumentException("En circuito PROPIA al menos una comision debe ser 0.00");
             }
         }
+
+        if (request.getCuotas() != null && request.getCuotas().size() > 1) {
+            FechaBasePlazo baseComun = null;
+            for (CuotaOperacionRequest cuotaReq : request.getCuotas()) {
+                FechaBasePlazo baseEfectiva = cuotaReq.getFechaBasePlazo() != null
+                        ? cuotaReq.getFechaBasePlazo()
+                        : FechaBasePlazo.CARGA;
+                if (baseComun == null) {
+                    baseComun = baseEfectiva;
+                } else if (baseComun != baseEfectiva) {
+                    throw new IllegalArgumentException("Todas las cuotas de la operacion deben compartir la misma fecha base de plazo (CARGA o REMATE)");
+                }
+            }
+        }
     }
 
     private List<CuotaOperacion> guardarCuotasExplicitas(List<CuotaOperacionRequest> cuotaRequests, Operacion operacion) {
