@@ -174,6 +174,133 @@ public class CalculadoraFinancieraServiceCapa3Test {
         assertThat(resPropiaVenta.totalAPagarVendedor()).isEqualByComparingTo(new BigDecimal("0.00"));
     }
 
+    @Test
+    void test08b_propia_ventaPropiaConSpreadYModalidadFinalEsIdenticaADirectoConComisionVendedorCero() {
+        // Venta de hacienda propia con spread y precio FINAL
+        Operacion opPropia = crearOperacionBase(ModalidadCircuito.PROPIA);
+        opPropia.setComisionPorcentajeVendedor(new BigDecimal("0.00")); // firma es vendedor
+        opPropia.setComisionPorcentajeComprador(new BigDecimal("3.00"));
+        opPropia.setModalidadPrecio(ModalidadPrecio.FINAL);
+        opPropia.setPrecioEsFinal(true);
+        opPropia.setMontoExtraCobradoComprador(new BigDecimal("500000.00"));
+
+        Operacion opDirecto = crearOperacionBase(ModalidadCircuito.DIRECTO);
+        opDirecto.setComisionPorcentajeVendedor(new BigDecimal("0.00"));
+        opDirecto.setComisionPorcentajeComprador(new BigDecimal("3.00"));
+        opDirecto.setModalidadPrecio(ModalidadPrecio.FINAL);
+        opDirecto.setPrecioEsFinal(true);
+        opDirecto.setMontoExtraCobradoComprador(new BigDecimal("500000.00"));
+
+        CalculoResultado resPropia = calculadora.calcular(opPropia);
+        CalculoResultado resDirecto = calculadora.calcular(opDirecto);
+
+        // Subtotal = 20.000.000,00. Desglose FINAL: neto = 20M / 1.105 = 18.099.547,51. ivaGanado = 1.900.452,49.
+        // comisionComprador = 20M * 3% = 600.000,00. ivaComisionComprador = 600.000 * 21% = 126.000,00.
+        // saldoHacienda = 20.000.000,00 + 1.900.452,49 = 21.900.452,49
+        // saldoComisionFirma = 600.000,00 + 126.000,00 + 500.000,00 = 1.226.000,00
+        // totalACobrarComprador = 600.000,00 + 126.000,00 + 500.000,00 = 1.226.000,00
+        // totalAPagarVendedor = 0.00
+        assertThat(resPropia.saldoHaciendaEntrePartes()).isEqualByComparingTo(new BigDecimal("21900452.49"));
+        assertThat(resPropia.saldoComisionFirma()).isEqualByComparingTo(new BigDecimal("1226000.00"));
+        assertThat(resPropia.totalACobrarComprador()).isEqualByComparingTo(new BigDecimal("1226000.00"));
+        assertThat(resPropia.totalAPagarVendedor()).isEqualByComparingTo(new BigDecimal("0.00"));
+        assertThat(resPropia.totalACobrarComprador()).isEqualByComparingTo(resPropia.saldoComisionFirma());
+
+        // Identidad exacta con DIRECTO con comisión vendedor cero
+        assertThat(resPropia.saldoHaciendaEntrePartes()).isEqualByComparingTo(resDirecto.saldoHaciendaEntrePartes());
+        assertThat(resPropia.saldoComisionFirma()).isEqualByComparingTo(resDirecto.saldoComisionFirma());
+        assertThat(resPropia.totalACobrarComprador()).isEqualByComparingTo(resDirecto.totalACobrarComprador());
+        assertThat(resPropia.totalAPagarVendedor()).isEqualByComparingTo(resDirecto.totalAPagarVendedor());
+    }
+
+    @Test
+    void test08c_propia_compraPropiaConVendedorMonotributistaExentoYOverridesEsIdenticaADirecto() {
+        // Caso Monotributista: IVA ganado = 0
+        Operacion opMono = crearOperacionBase(ModalidadCircuito.PROPIA);
+        opMono.setComisionPorcentajeComprador(new BigDecimal("0.00")); // firma es comprador
+        opMono.setComisionPorcentajeVendedor(new BigDecimal("2.50"));
+        opMono.setCondicionFiscalVendedor(CondicionFiscal.MONOTRIBUTISTA);
+
+        Operacion opMonoDirecto = crearOperacionBase(ModalidadCircuito.DIRECTO);
+        opMonoDirecto.setComisionPorcentajeComprador(new BigDecimal("0.00"));
+        opMonoDirecto.setComisionPorcentajeVendedor(new BigDecimal("2.50"));
+        opMonoDirecto.setCondicionFiscalVendedor(CondicionFiscal.MONOTRIBUTISTA);
+
+        CalculoResultado resMono = calculadora.calcular(opMono);
+        CalculoResultado resMonoDirecto = calculadora.calcular(opMonoDirecto);
+
+        // subtotal = 20M, ivaGanado = 0 -> saldoHacienda = 20M
+        // comisionVendedor = 20M * 2.5% = 500.000,00. ivaComisionVendedor = 500.000 * 21% = 105.000,00.
+        // saldoComisionFirma = 500.000,00 + 105.000,00 = 605.000,00.
+        // totalACobrarComprador = 0.00, totalAPagarVendedor = 0.00
+        assertThat(resMono.saldoHaciendaEntrePartes()).isEqualByComparingTo(new BigDecimal("20000000.00"));
+        assertThat(resMono.saldoComisionFirma()).isEqualByComparingTo(new BigDecimal("605000.00"));
+        assertThat(resMono.totalACobrarComprador()).isEqualByComparingTo(new BigDecimal("0.00"));
+        assertThat(resMono.totalAPagarVendedor()).isEqualByComparingTo(new BigDecimal("0.00"));
+        assertThat(resMono.saldoHaciendaEntrePartes()).isEqualByComparingTo(resMonoDirecto.saldoHaciendaEntrePartes());
+        assertThat(resMono.saldoComisionFirma()).isEqualByComparingTo(resMonoDirecto.saldoComisionFirma());
+        assertThat(resMono.totalACobrarComprador()).isEqualByComparingTo(resMonoDirecto.totalACobrarComprador());
+        assertThat(resMono.totalAPagarVendedor()).isEqualByComparingTo(resMonoDirecto.totalAPagarVendedor());
+
+        // Caso Exento (R-075): IVA ganado = 0
+        Operacion opExento = crearOperacionBase(ModalidadCircuito.PROPIA);
+        opExento.setComisionPorcentajeComprador(new BigDecimal("0.00"));
+        opExento.setComisionPorcentajeVendedor(new BigDecimal("2.50"));
+        opExento.setCondicionFiscalVendedor(CondicionFiscal.EXENTO);
+
+        CalculoResultado resExento = calculadora.calcular(opExento);
+        assertThat(resExento.saldoHaciendaEntrePartes()).isEqualByComparingTo(new BigDecimal("20000000.00"));
+        assertThat(resExento.saldoComisionFirma()).isEqualByComparingTo(new BigDecimal("605000.00"));
+        assertThat(resExento.totalACobrarComprador()).isEqualByComparingTo(new BigDecimal("0.00"));
+        assertThat(resExento.totalAPagarVendedor()).isEqualByComparingTo(new BigDecimal("0.00"));
+
+        // Caso con Overrides manuales activos (R-079)
+        Operacion opOverrides = crearOperacionBase(ModalidadCircuito.PROPIA);
+        opOverrides.setComisionPorcentajeComprador(new BigDecimal("0.00"));
+        opOverrides.setComisionPorcentajeVendedor(new BigDecimal("2.50"));
+        opOverrides.setIvaGanadoMontoOverride(new BigDecimal("150000.00"));
+        opOverrides.setIvaComisionVendedorOverride(new BigDecimal("25000.00"));
+
+        Operacion opOverridesDirecto = crearOperacionBase(ModalidadCircuito.DIRECTO);
+        opOverridesDirecto.setComisionPorcentajeComprador(new BigDecimal("0.00"));
+        opOverridesDirecto.setComisionPorcentajeVendedor(new BigDecimal("2.50"));
+        opOverridesDirecto.setIvaGanadoMontoOverride(new BigDecimal("150000.00"));
+        opOverridesDirecto.setIvaComisionVendedorOverride(new BigDecimal("25000.00"));
+
+        CalculoResultado resOverrides = calculadora.calcular(opOverrides);
+        CalculoResultado resOverridesDirecto = calculadora.calcular(opOverridesDirecto);
+
+        // saldoHacienda = 20M + 150.000,00 = 20.150.000,00
+        // saldoComisionFirma = 500.000,00 + 25.000,00 = 525.000,00
+        assertThat(resOverrides.saldoHaciendaEntrePartes()).isEqualByComparingTo(new BigDecimal("20150000.00"));
+        assertThat(resOverrides.saldoComisionFirma()).isEqualByComparingTo(new BigDecimal("525000.00"));
+        assertThat(resOverrides.totalACobrarComprador()).isEqualByComparingTo(new BigDecimal("0.00"));
+        assertThat(resOverrides.totalAPagarVendedor()).isEqualByComparingTo(new BigDecimal("0.00"));
+        assertThat(resOverrides.saldoHaciendaEntrePartes()).isEqualByComparingTo(resOverridesDirecto.saldoHaciendaEntrePartes());
+        assertThat(resOverrides.saldoComisionFirma()).isEqualByComparingTo(resOverridesDirecto.saldoComisionFirma());
+        assertThat(resOverrides.totalACobrarComprador()).isEqualByComparingTo(resOverridesDirecto.totalACobrarComprador());
+        assertThat(resOverrides.totalAPagarVendedor()).isEqualByComparingTo(resOverridesDirecto.totalAPagarVendedor());
+    }
+
+    @Test
+    void test08d_propia_ambasComisionesCeroProduceSaldoComisionCeroYSaldoHaciendaIntacto() {
+        Operacion op = crearOperacionBase(ModalidadCircuito.PROPIA);
+        op.setComisionPorcentajeVendedor(new BigDecimal("0.00"));
+        op.setComisionPorcentajeComprador(new BigDecimal("0.00"));
+        op.setMontoExtraCobradoComprador(null);
+
+        CalculoResultado res = calculadora.calcular(op);
+
+        assertThat(res.saldoComisionFirma()).isEqualByComparingTo(new BigDecimal("0.00"));
+        assertThat(res.totalACobrarComprador()).isEqualByComparingTo(new BigDecimal("0.00"));
+        assertThat(res.totalAPagarVendedor()).isEqualByComparingTo(new BigDecimal("0.00"));
+        // subtotal 20M + ivaGanado 2.1M = 22.100.000,00
+        assertThat(res.saldoHaciendaEntrePartes()).isEqualByComparingTo(new BigDecimal("22100000.00"));
+        assertThat(res.saldoHaciendaEntrePartes()).isEqualByComparingTo(
+                res.subtotalGanado().add(res.ivaGanado())
+        );
+    }
+
     // =========================================================================
     // REGRESIÓN OBLIGATORIA AL CENTAVO: Anexo II §6.1 y §6.2 (Tests 9 y 10)
     // =========================================================================

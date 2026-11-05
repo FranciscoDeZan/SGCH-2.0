@@ -31,7 +31,7 @@ public class OperacionDtoValidationTest {
 
     private OperacionRequest createValidOperacionRequest() {
         OperacionRequest req = new OperacionRequest();
-        req.setFechaOperacion(LocalDateTime.of(2026, 11, 3, 10, 0));
+        req.setFechaOperacion(LocalDateTime.now().minusDays(1));
         req.setModalidadCircuito(ModalidadCircuito.DIRECTO);
         req.setCompradorId("comp-1");
         req.setVendedorId("vend-1");
@@ -41,6 +41,22 @@ public class OperacionDtoValidationTest {
         req.setModalidadPrecio(ModalidadPrecio.NETO);
         req.setFormaPago("Cheque 30 dias");
         return req;
+    }
+
+    @Test
+    void fechaOperacionFuturaDisparaViolacionPastOrPresent() {
+        OperacionRequest reqFutura = createValidOperacionRequest();
+        reqFutura.setFechaOperacion(LocalDateTime.now().plusDays(1));
+
+        Set<ConstraintViolation<OperacionRequest>> violations = validator.validate(reqFutura);
+        assertThat(violations).hasSize(1);
+        ConstraintViolation<OperacionRequest> violation = violations.iterator().next();
+        assertThat(violation.getPropertyPath().toString()).isEqualTo("fechaOperacion");
+        assertThat(violation.getMessage()).contains("no puede ser futura");
+
+        OperacionRequest reqPasada = createValidOperacionRequest();
+        reqPasada.setFechaOperacion(LocalDateTime.now().minusMinutes(1));
+        assertThat(validator.validate(reqPasada)).isEmpty();
     }
 
     @Test
@@ -180,7 +196,7 @@ public class OperacionDtoValidationTest {
         req.setCuotaId(null); // Contado
         req.setClienteId("cli-1");
         req.setTipoMovimiento(TipoMovimientoCobro.COBRO_COMPRADOR);
-        req.setFechaMovimiento(LocalDate.of(2026, 11, 3));
+        req.setFechaMovimiento(LocalDate.now().minusDays(1));
         req.setMonto(new BigDecimal("1000.00"));
         req.setMedioPago(MedioPago.TRANSFERENCIA);
         req.setDocumentado(true);

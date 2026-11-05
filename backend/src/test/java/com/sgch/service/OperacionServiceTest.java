@@ -91,7 +91,7 @@ public class OperacionServiceTest {
         requestBase = new OperacionRequest();
         requestBase.setCompradorId("comp-1");
         requestBase.setVendedorId("vend-1");
-        requestBase.setFechaOperacion(LocalDateTime.of(2026, 11, 3, 10, 0));
+        requestBase.setFechaOperacion(LocalDateTime.now().minusDays(1));
         requestBase.setModalidadCircuito(ModalidadCircuito.DIRECTO);
         requestBase.setCategoria(CategoriaOperacion.INVERNADA);
         requestBase.setKgNeto(new BigDecimal("10000.00"));
@@ -489,5 +489,30 @@ public class OperacionServiceTest {
         assertThat(responses.get(0).cuotas()).hasSize(1);
         assertThat(responses.get(1).cuotas()).hasSize(1);
         verify(cuotaOperacionRepository, never()).findByOperacionIdOrderByNumeroCuotaAsc(any());
+    }
+
+    @Test
+    void test14_updateOperacionPreservaEstadoLiquidacionCuandoRequestTraeNullYActualizaCuandoNoEsNull() {
+        Operacion opExistente = new Operacion();
+        opExistente.setId("op-14");
+        opExistente.setEstadoLiquidacion(EstadoLiquidacion.PARCIALMENTE_PAGADO);
+
+        when(operacionRepository.findById("op-14")).thenReturn(Optional.of(opExistente));
+        when(clienteRepository.findById("comp-1")).thenReturn(Optional.of(comprador));
+        when(clienteRepository.findById("vend-1")).thenReturn(Optional.of(vendedor));
+        when(operacionRepository.save(any(Operacion.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(calculadoraFinancieraService.calcular(any(Operacion.class))).thenReturn(crearCalculoResultadoDummy());
+
+        // Caso 1: request con estadoLiquidacion == null -> preserva PARCIALMENTE_PAGADO
+        requestBase.setEstadoLiquidacion(null);
+        OperacionResponse resNull = operacionService.update("op-14", requestBase);
+        assertThat(opExistente.getEstadoLiquidacion()).isEqualTo(EstadoLiquidacion.PARCIALMENTE_PAGADO);
+        assertThat(resNull.estadoLiquidacion()).isEqualTo(EstadoLiquidacion.PARCIALMENTE_PAGADO);
+
+        // Caso 2: request con estadoLiquidacion == LIQUIDADO -> actualiza a LIQUIDADO
+        requestBase.setEstadoLiquidacion(EstadoLiquidacion.LIQUIDADO);
+        OperacionResponse resOverride = operacionService.update("op-14", requestBase);
+        assertThat(opExistente.getEstadoLiquidacion()).isEqualTo(EstadoLiquidacion.LIQUIDADO);
+        assertThat(resOverride.estadoLiquidacion()).isEqualTo(EstadoLiquidacion.LIQUIDADO);
     }
 }

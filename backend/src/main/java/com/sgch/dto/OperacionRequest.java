@@ -7,6 +7,7 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -25,6 +26,7 @@ import java.util.List;
 public class OperacionRequest {
 
     @NotNull(message = "La fecha de operacion es obligatoria")
+    @PastOrPresent(message = "La fecha de operacion no puede ser futura")
     private LocalDateTime fechaOperacion;
 
     @NotNull(message = "La modalidad de circuito es obligatoria")
@@ -116,6 +118,19 @@ public class OperacionRequest {
     @DecimalMin(value = "0.00", message = "El flete no puede ser negativo")
     private BigDecimal fleteMonto;
 
+    /**
+     * Estado de liquidacion de la operacion (PENDIENTE, PARCIALMENTE_PAGADO, LIQUIDADO, ANULADA).
+     *
+     * <p>Semantica de contrato (A-08, NA-009, NA-016):
+     * <ul>
+     *   <li>En creacion (POST /api/v1/operaciones): este campo se ignora en el backend y la operacion
+     *       nace siempre en estado {@link EstadoLiquidacion#PENDIENTE} (RN05).</li>
+     *   <li>En actualizacion (PUT /api/v1/operaciones/{id}): si se envia {@code null}, se preserva
+     *       el estado de liquidacion actual derivado de la imputacion de cobros. Si se envia un valor no nulo,
+     *       se aplica un override explicito.</li>
+     *   <li>El frontend de Fase 2.B debe omitir este campo tanto en formularios de alta como de edicion ordinaria.</li>
+     * </ul>
+     */
     private EstadoLiquidacion estadoLiquidacion;
 
     @NotBlank(message = "La forma de pago es obligatoria")

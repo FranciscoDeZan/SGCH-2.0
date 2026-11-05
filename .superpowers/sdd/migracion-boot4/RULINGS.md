@@ -762,6 +762,15 @@ Limpieza de inconsistencias documentales detectadas en la auditoría final de Fa
 - Actualización de `R-089` para reflejar que Tasks 6-9 fueron pusheadas a `origin/main` en `da9e796`.
 - Eliminación del emoji en `REPORT.md` (línea 219) para estricta conformidad con `R-042`.
 
+### NA-015
+Ubicación de `fecha_base_plazo` en el modelo relacional: el campo permanece a nivel de cuota en `cuotas_operacion` per especificación canónica v3.2 §6.4 y `R-076`. El invariante de negocio ("todas las cuotas de una operación deben compartir la misma fecha base de plazo CARGA o REMATE") se garantiza mediante validación explícita en `OperacionService.validarReglasNegocio` tanto en creación como en actualización. Una eventual migración del campo hacia la tabla `operaciones` queda diferida como deuda de diseño post-MVP.
+
+### NA-016
+Semántica de `estadoLiquidacion` en `OperacionRequest`: se adopta la Opción (a) reforzada manteniendo un único DTO `OperacionRequest` para evitar duplicar 35 atributos validados con Bean Validation. En creación (`POST /api/v1/operaciones`), `OperacionService.create` fuerza siempre `EstadoLiquidacion.PENDIENTE` ignorando el valor del payload (`RN05`, `NA-009`). En actualización (`PUT /api/v1/operaciones/{id}`), si el request envía `null`, se preserva el estado de liquidación actual derivado de la imputación de cobros; si envía un valor no nulo, se aplica un override explícito. El frontend de Fase 2.B omite este campo en formularios de alta y edición ordinaria.
+
+### NA-017
+Resolución de consultas N+1 mediante `@EntityGraph` y relación inversa `@OneToMany`: para eliminar el problema de N+1 queries en `OperacionService.findAll` (donde cada operación requería consultas separadas para sus cuotas y relaciones LAZY de clientes), se introdujo en `Operacion.java` la relación inversa `@OneToMany(mappedBy = "operacion", fetch = FetchType.LAZY) @OrderBy("numeroCuota ASC") private List<CuotaOperacion> cuotas = new ArrayList<>();` y la sobrescritura con `@EntityGraph(attributePaths = {"comprador", "vendedor", "cuotas"})` en `OperacionRepository.findAll(Specification<Operacion>)`. Al utilizar `mappedBy = "operacion"`, no se modifica el esquema SQL existente ni la validación `ddl-auto: validate`. La restricción `@EqualsAndHashCode(onlyExplicitlyIncluded = true)` restringida al `@Id` en `Operacion.java` (`R-023`) previene problemas de recursión o inicializaciones no deseadas.
+
 ---
 
 ## Historial de Cambios
@@ -779,3 +788,4 @@ Limpieza de inconsistencias documentales detectadas en la auditoría final de Fa
 | 2026-11-03 | Antigravity + Usuario | Actualización | Incorporación de R-083..R-089 y NA-007..NA-011 tras cierre de Fase 2.A (Tasks 0-8). Total 89 rulings, 11 notas de auditoría. |
 | 2026-11-03 | Fix I-01 | Actualización | Corrección de I-01 (fallback condicionFiscal en ClienteService.save). Documentación de NA-012, NA-013, NA-014. Corrección de R-058 y R-089. Fix del emoji en REPORT.md. |
 | 2026-11-04 | Consolidación AGENTS | Actualización | Incorporación de R-096: reestructuración de `AGENTS.md` en 3 capas con `.agents/rules/backend-java.md` y `.agents/rules/frontend-react.md` para progressive disclosure. |
+| 2026-11-04 | Saneamiento Bloque 1 | Actualización | Cierre de saneamiento pre-Fase 2.B (Tasks 1-4). Documentación de NA-015 (invariante fecha_base_plazo), NA-016 (semántica de estadoLiquidacion en OperacionRequest) y NA-017 (@EntityGraph y @OneToMany sin N+1). |
