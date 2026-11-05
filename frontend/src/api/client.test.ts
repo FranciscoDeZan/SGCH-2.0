@@ -23,7 +23,7 @@ describe('apiFetch & client service', () => {
   });
 
   describe('apiFetch', () => {
-    it('prepends /api to endpoint if missing', async () => {
+    it('prepends /api/v1 to endpoint if missing', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -33,7 +33,7 @@ describe('apiFetch & client service', () => {
       const result = await apiFetch<{ message: string }>('/clientes');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/clientes',
+        '/api/v1/clientes',
         expect.objectContaining({
           headers: expect.objectContaining({
             'Content-Type': 'application/json',
@@ -68,7 +68,7 @@ describe('apiFetch & client service', () => {
       await apiFetch('clientes');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/clientes',
+        '/api/v1/clientes',
         expect.anything()
       );
     });
@@ -87,7 +87,7 @@ describe('apiFetch & client service', () => {
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/custom',
+        '/api/v1/custom',
         expect.objectContaining({
           headers: expect.objectContaining({
             'Content-Type': 'application/json',
@@ -190,7 +190,7 @@ describe('apiFetch & client service', () => {
       calificacion: 'A',
     };
 
-    it('getClientes calls GET /api/clientes', async () => {
+    it('getClientes calls GET /api/v1/clientes', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -199,11 +199,11 @@ describe('apiFetch & client service', () => {
 
       const clientes = await getClientes();
 
-      expect(mockFetch).toHaveBeenCalledWith('/api/clientes', expect.anything());
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/clientes', expect.anything());
       expect(clientes).toEqual([mockCliente]);
     });
 
-    it('getClienteById calls GET /api/clientes/:id', async () => {
+    it('getClienteById calls GET /api/v1/clientes/:id', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -212,11 +212,11 @@ describe('apiFetch & client service', () => {
 
       const cliente = await getClienteById('123');
 
-      expect(mockFetch).toHaveBeenCalledWith('/api/clientes/123', expect.anything());
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/clientes/123', expect.anything());
       expect(cliente).toEqual(mockCliente);
     });
 
-    it('createCliente calls POST /api/clientes with body', async () => {
+    it('createCliente calls POST /api/v1/clientes with body', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 201,
@@ -232,7 +232,7 @@ describe('apiFetch & client service', () => {
       const result = await createCliente(clienteToCreate);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/clientes',
+        '/api/v1/clientes',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify(clienteToCreate),
@@ -241,7 +241,7 @@ describe('apiFetch & client service', () => {
       expect(result).toEqual(mockCliente);
     });
 
-    it('updateCliente calls PUT /api/clientes/:id with body', async () => {
+    it('updateCliente calls PUT /api/v1/clientes/:id with body', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -251,7 +251,7 @@ describe('apiFetch & client service', () => {
       const result = await updateCliente('123', mockCliente);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/clientes/123',
+        '/api/v1/clientes/123',
         expect.objectContaining({
           method: 'PUT',
           body: JSON.stringify(mockCliente),
@@ -260,7 +260,7 @@ describe('apiFetch & client service', () => {
       expect(result).toEqual(mockCliente);
     });
 
-    it('deleteCliente calls DELETE /api/clientes/:id', async () => {
+    it('deleteCliente calls DELETE /api/v1/clientes/:id', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 204,
@@ -270,7 +270,7 @@ describe('apiFetch & client service', () => {
       await deleteCliente('123');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/clientes/123',
+        '/api/v1/clientes/123',
         expect.objectContaining({
           method: 'DELETE',
         })

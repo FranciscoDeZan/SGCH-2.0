@@ -16,12 +16,12 @@ export class ApiError extends Error {
 
 /**
  * Base API fetch wrapper using native fetch.
- * Automatically prepends '/api' and includes default JSON headers.
+ * Automatically prepends '/api/v1' and includes default JSON headers.
  */
 export async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const normalizedEndpoint = endpoint.startsWith('/api')
     ? endpoint
-    : `/api${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+    : `/api/v1${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
