@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { OperacionResponse, OperacionFiltros, OperacionRequest } from '../types/operacion';
 import type { Cliente } from '../types/cliente';
-import { getOperaciones, getClientes } from '../api/client';
+import { getOperaciones, getClientes, getOperacionById } from '../api/client';
 import { OperacionList } from '../components/operaciones/OperacionList';
 import { OperacionForm } from '../components/operaciones/OperacionForm';
+import { OperacionDetail } from '../components/operaciones/OperacionDetail';
 import { Toast } from '../components/ui/Toast';
 
 export type VistaOperacion = 'lista' | 'detalle' | 'alta' | 'edicion';
@@ -112,41 +113,17 @@ export function OperacionesPage({
         return <EmptyOperacionFallback onVolver={() => setVista('lista')} />;
       }
       return (
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-800">
-              Detalle de Operación {selectedOperacion.id}
-            </h2>
-            <div className="flex space-x-2">
-              <button
-                type="button"
-                onClick={() => setVista('edicion')}
-                className="px-3 py-1 text-sm bg-green-700 text-white rounded hover:bg-green-800 transition cursor-pointer"
-              >
-                Editar
-              </button>
-              <button
-                type="button"
-                onClick={() => setVista('lista')}
-                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 transition cursor-pointer"
-              >
-                Volver
-              </button>
-            </div>
-          </div>
-          <p className="text-gray-700 mb-2">
-            Comprador: <span className="font-medium">{selectedOperacion.compradorNombre ?? selectedOperacion.compradorId}</span>
-          </p>
-          <p className="text-gray-700 mb-2">
-            Vendedor: <span className="font-medium">{selectedOperacion.vendedorNombre ?? selectedOperacion.vendedorId}</span>
-          </p>
-          <p className="text-gray-700 mb-2">
-            Categoría: <span className="font-medium">{selectedOperacion.categoria}</span>
-          </p>
-          <p className="text-gray-700">
-            Kilos Netos: <span className="font-mono font-medium">{selectedOperacion.kgNeto.toLocaleString('es-AR')} kg</span>
-          </p>
-        </div>
+        <OperacionDetail
+          operacion={selectedOperacion}
+          onVolver={() => setVista('lista')}
+          onEditar={() => setVista('edicion')}
+          onCobroRegistrado={async () => {
+            const fresh = await getOperacionById(selectedOperacion.id);
+            setSelectedOperacion(fresh);
+            fetchData(filtros);
+          }}
+          onActionSuccess={(msg) => setToastMessage(msg)}
+        />
       );
     }
 
