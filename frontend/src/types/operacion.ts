@@ -57,7 +57,7 @@ export interface OperacionResponse {
   precioKgFacturado: number;
   montoExtraCobradoComprador: number | null;
   modalidadPrecio: ModalidadPrecio;
-  precioEsFinal: boolean;
+  precioEsFinal: boolean | null;
   comisionPorcentajeVendedor: number;
   comisionPorcentajeComprador: number;
   comisionTotalCobradaReferencia: number | null;
@@ -68,10 +68,10 @@ export interface OperacionResponse {
   ivaGanadoMontoOverride: number | null;
   ivaComisionVendedorOverride: number | null;
   ivaComisionCompradorOverride: number | null;
-  conGarantia: boolean;
+  conGarantia: boolean | null;
   retencionesExternasMonto: number | null;
-  condicionEntrega: CondicionEntrega;
-  fleteCargoDe: FleteCargoDe;
+  condicionEntrega: CondicionEntrega | null;
+  fleteCargoDe: FleteCargoDe | null;
   fleteMonto: number | null;
   estadoLiquidacion: EstadoLiquidacion;
   formaPago: string | null;
@@ -90,7 +90,7 @@ export interface OperacionResponse {
 
 /**
  * Payload para creacion o actualizacion de operaciones pecuarias.
- * OMIITE estadoLiquidacion conforme a A-08 / NA-009 / NA-016.
+ * OMITE estadoLiquidacion conforme a A-08 / NA-009 / NA-016.
  */
 export interface OperacionRequest {
   fechaOperacion: string;

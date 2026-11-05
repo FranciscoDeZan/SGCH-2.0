@@ -28,7 +28,7 @@ export interface CobroResponse {
   fechaMovimiento: string;
   monto: number;
   medioPago: MedioPago;
-  documentado: boolean;
+  documentado: boolean | null;
   observaciones: string | null;
 }
 
