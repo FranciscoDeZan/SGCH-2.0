@@ -75,3 +75,15 @@ Ruling 6: Docker Desktop operativo. ClienteRepositoryTest corre con Testcontaine
 - Commit final: 486c7ee (pusheado a origin/main).
 - 5 commits: c8724ee (Task 1), dd0ca56 (Task 2), 81b6052 (Task 3), ccac5f4 (Task 4), 486c7ee (micro-fix de robustez).
 - Próximo: auditoría final del Bloque 1 + Fase 2.B (frontend Operaciones).
+
+## 2026-11-05 - Cierre Fase 2.B (Frontend Operaciones) + Cierre Iteración 2
+
+- Tasks 1-8 del plan 2026-11-05-iteracion-2-fase-2b-frontend completadas y verificadas con TDD + two-reviewer + checkpoints.
+- 157/157 tests backend verdes (sin tocar backend/).
+- 137/137 tests frontend verdes en Vitest (17 test suites).
+- 0 errores y 0 warnings en tsc -b --noEmit y npm run build.
+- Duplicación isomórfica de Capas 1, 2 y 3 del Anexo II en calculadoraFinanciera.ts con 7 tests canónicos.
+- OperacionesPage, OperacionList (4 estados), OperacionForm (preview en vivo y RFC 7807), OperacionDetail y CobrosPanel integrados.
+- Dictado de voz con Web Speech API en OperacionesMobileCopilot y navegación cross-page completa desde ClienteDetail a Operaciones.
+- 5 tests E2E de ciclo de vida completo en OperacionesFlow.test.tsx verificando liquidación, recálculo, dictado móvil, cross-page y accesibilidad sin emojis (R-042).
+- Cierre exitoso de Iteración 2.

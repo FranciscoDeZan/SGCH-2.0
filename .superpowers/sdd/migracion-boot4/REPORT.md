@@ -274,4 +274,28 @@ npm --prefix frontend test
 - **Contrato JSON isomórfico:** test específico + 75/75 Vitest verdes.
 - **Deuda residual:** fixture de mock response en OperacionControllerTest migrado a fechas dinámicas (Task 4 micro-fix). Anotar como NA-018 candidato si en el futuro se encuentra más deuda semántica en fixtures.
 - **Rulings agregados:** R-096 (AGENTS.md router) + NA-015, NA-016, NA-017.
-- **Fase 2.B (frontend Operaciones):** siguiente.
+- **Fase 2.B (frontend Operaciones):** completada (ver sección abajo).
+
+## Fase 2.B — Frontend Operaciones (Cierre de Iteración 2)
+
+- **Estado:** COMPLETADO (2026-11-05).
+- **Commits pusheados / preparados:**
+  - `4080504`: docs(plan): iteracion 2 fase 2b frontend plan approved
+  - `2eda4e8`: feat(api): switch client fallback to /api/v1 and align Cliente contracts
+  - `fdf5d77`: feat(operaciones): add TypeScript mirror types and client API helpers
+  - `e462294`: feat(operaciones): add OperacionesPage and OperacionList with 4 visual states
+  - `c4568e6`: feat(operaciones): add calculadoraFinanciera with 3-layer Anexo II logic
+  - `4bf875d`: feat(operaciones): add OperacionForm with real-time preview and RFC 7807 handling
+  - `2746be7`: feat(operaciones): add OperacionDetail, CobrosPanel and copy summary helper
+  - `24d3a2d`: feat(operaciones): add OperacionesMobileCopilot with voice dictation prefill
+  - `ef51eb9`: feat(clientes): enable operaciones nav from ClienteDetail and add cuit + condicionFiscal to ClienteForm
+  - `1ddf3d6`: test(operaciones): add E2E lifecycle tests, accessibility checks and close Fase 2.B docs
+- **Tasks ejecutadas:** 8 tasks del plan aprobado (subdividida Task 4 en 4.1 y 4.2).
+- **Tests totales:**
+  - Backend: 157/157 verdes (0 failures, 0 errors, 0 skipped, 0 archivos modificados en backend/).
+  - Frontend: 137/137 verdes (17 test files, 100% pasando).
+- **Warnings de compilación / build:** 0 errores, 0 warnings en `tsc -b --noEmit` y `npm run build`.
+- **Cálculo fiscal en frontend:** Duplicación isomórfica al centavo de Capas 1, 2 y 3 del Anexo II v1.1 (`calculadoraFinanciera.ts`), validada contra los 7 tests canónicos de regresión (incluyendo caso PROPIA).
+- **Accesibilidad y UX:** Roles semánticos completos, labels explícitos en todos los inputs, soporte de teclado, toasts informativos de éxito, y cero emojis en código y UI (R-042).
+- **Integración cross-page:** Navegación fluida entre Clientes y Operaciones con cliente preseleccionado para compra y venta, historial de operaciones en tiempo real en la ficha del cliente, y prellenado por dictado de voz en móvil.
+- **Cierre:** Iteración 2 finalizada exitosamente.
