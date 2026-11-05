@@ -52,7 +52,7 @@ public class OperacionControllerTest {
     @BeforeEach
     void setUp() {
         requestBase = new OperacionRequest();
-        requestBase.setFechaOperacion(LocalDateTime.of(2026, 11, 3, 10, 0));
+        requestBase.setFechaOperacion(LocalDateTime.now().minusDays(1));
         requestBase.setModalidadCircuito(ModalidadCircuito.DIRECTO);
         requestBase.setCompradorId("comp-1");
         requestBase.setVendedorId("vend-1");
@@ -81,8 +81,8 @@ public class OperacionControllerTest {
 
         return new OperacionResponse(
                 id,
-                LocalDateTime.of(2026, 11, 3, 10, 5),
-                LocalDateTime.of(2026, 11, 3, 10, 0),
+                LocalDateTime.now().minusDays(1),
+                LocalDateTime.now().minusDays(1),
                 ModalidadCircuito.DIRECTO,
                 null,
                 "comp-1",
