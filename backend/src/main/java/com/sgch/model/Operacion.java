@@ -9,6 +9,8 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -159,4 +161,8 @@ public class Operacion {
 
     @Column(name = "observaciones", columnDefinition = "TEXT")
     private String observaciones;
+
+    @OneToMany(mappedBy = "operacion", fetch = FetchType.LAZY)
+    @OrderBy("numeroCuota ASC")
+    private List<CuotaOperacion> cuotas = new ArrayList<>();
 }

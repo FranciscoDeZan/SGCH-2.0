@@ -10,6 +10,10 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+/**
+ * Motor de cálculo financiero y fiscal en 3 capas para operaciones de consignación y compraventa de hacienda.
+ * Implementa las reglas del Anexo II (§2 Capa 1, §3 Capa 2, §4 Capa 3).
+ */
 @Service
 public class CalculadoraFinancieraService {
 
@@ -27,6 +31,12 @@ public class CalculadoraFinancieraService {
     // CAPA 1: Valorización económica (Anexo II §2)
     // =========================================================================
 
+    /**
+     * Calcula el subtotal económico del ganado (kgNeto * precioKgFacturado) redondeado a 2 decimales (Capa 1).
+     *
+     * @param op operación a calcular
+     * @return monto subtotal del ganado, o 0.00 si op o sus campos son nulos
+     */
     public BigDecimal calcularSubtotalGanado(Operacion op) {
         if (op == null || op.getKgNeto() == null || op.getPrecioKgFacturado() == null) {
             return ZERO_MONEY;
@@ -36,6 +46,12 @@ public class CalculadoraFinancieraService {
                 .setScale(SCALE, ROUNDING_MODE);
     }
 
+    /**
+     * Calcula la comisión pactada con el vendedor sobre el subtotal ganado (Capa 1).
+     *
+     * @param op operación a calcular
+     * @return monto de comisión del vendedor redondeado a 2 decimales
+     */
     public BigDecimal calcularComisionVendedor(Operacion op) {
         if (op == null) {
             return ZERO_MONEY;
@@ -49,6 +65,12 @@ public class CalculadoraFinancieraService {
         return calcularPorcentajeSobreMonto(subtotal, porcentaje);
     }
 
+    /**
+     * Calcula la comisión pactada con el comprador sobre el subtotal ganado (Capa 1).
+     *
+     * @param op operación a calcular
+     * @return monto de comisión del comprador redondeado a 2 decimales
+     */
     public BigDecimal calcularComisionComprador(Operacion op) {
         if (op == null) {
             return ZERO_MONEY;
@@ -66,6 +88,13 @@ public class CalculadoraFinancieraService {
     // CAPA 2: Liquidación fiscal (Anexo II §3)
     // =========================================================================
 
+    /**
+     * Calcula la liquidación fiscal de IVA sobre el ganado (10.5% o desglose 1.105 en FINAL)
+     * según la condición fiscal del vendedor y porcentaje documentado (Capa 2).
+     *
+     * @param op operación a calcular
+     * @return monto de IVA ganado (o valor de override si estuviera configurado)
+     */
     public BigDecimal calcularIvaGanado(Operacion op) {
         if (op == null) {
             return ZERO_MONEY;
@@ -108,6 +137,12 @@ public class CalculadoraFinancieraService {
         }
     }
 
+    /**
+     * Calcula el IVA sobre la comisión del vendedor (21%) según el porcentaje documentado (Capa 2).
+     *
+     * @param op operación a calcular
+     * @return monto de IVA comisión vendedor (o valor de override si estuviera configurado)
+     */
     public BigDecimal calcularIvaComisionVendedor(Operacion op) {
         if (op == null) {
             return ZERO_MONEY;
@@ -127,6 +162,12 @@ public class CalculadoraFinancieraService {
         return calcularPorcentajeSobreMonto(ivaTeorico, docComision);
     }
 
+    /**
+     * Calcula el IVA sobre la comisión del comprador (21%) según el porcentaje documentado (Capa 2).
+     *
+     * @param op operación a calcular
+     * @return monto de IVA comisión comprador (o valor de override si estuviera configurado)
+     */
     public BigDecimal calcularIvaComisionComprador(Operacion op) {
         if (op == null) {
             return ZERO_MONEY;
@@ -150,6 +191,13 @@ public class CalculadoraFinancieraService {
     // CAPA 3: Saldos por contraparte e integrador (Anexo II §4, R-069, R-070, R-071)
     // =========================================================================
 
+    /**
+     * Calcula el saldo total de hacienda entre comprador y vendedor (subtotal + IVA ganado) en DIRECTO/PROPIA,
+     * o 0.00 en CONSIGNATARIA_EXTERNA (Capa 3).
+     *
+     * @param op operación a calcular
+     * @return saldo de hacienda entre partes
+     */
     public BigDecimal calcularSaldoHaciendaEntrePartes(Operacion op) {
         if (op == null || op.getModalidadCircuito() == null) {
             return ZERO_MONEY;
@@ -161,18 +209,24 @@ public class CalculadoraFinancieraService {
         );
     }
 
+    /**
+     * Calcula el saldo neto de comisión a percibir por la firma intermediaria (Capa 3).
+     *
+     * @param op operación a calcular
+     * @return saldo total de comisión firma
+     */
     public BigDecimal calcularSaldoComisionFirma(Operacion op) {
         if (op == null || op.getModalidadCircuito() == null) {
             return ZERO_MONEY;
         }
         if (op.getModalidadCircuito() == ModalidadCircuito.CONSIGNATARIA_EXTERNA) {
             return calcularSaldoComisionFirmaDesdeCapas(
-                    op.getModalidadCircuito(),
-                    calcularComisionVendedor(op),
-                    calcularIvaComisionVendedor(op),
-                    ZERO_MONEY,
-                    ZERO_MONEY,
-                    ZERO_MONEY
+                op.getModalidadCircuito(),
+                calcularComisionVendedor(op),
+                calcularIvaComisionVendedor(op),
+                ZERO_MONEY,
+                ZERO_MONEY,
+                ZERO_MONEY
             );
         }
         return calcularSaldoComisionFirmaDesdeCapas(
@@ -185,6 +239,13 @@ public class CalculadoraFinancieraService {
         );
     }
 
+    /**
+     * Calcula el saldo directo que la firma debe percibir del comprador (comisión comprador + IVA + extra)
+     * en circuitos DIRECTO/PROPIA, o 0.00 en CONSIGNATARIA_EXTERNA (Capa 3).
+     *
+     * @param op operación a calcular
+     * @return total a cobrar al comprador por la firma
+     */
     public BigDecimal calcularTotalACobrarComprador(Operacion op) {
         if (op == null || op.getModalidadCircuito() == null) {
             return ZERO_MONEY;
@@ -197,10 +258,22 @@ public class CalculadoraFinancieraService {
         );
     }
 
+    /**
+     * Retorna el saldo a pagar al vendedor por la firma (0.00 en el modelo actual) (Capa 3).
+     *
+     * @param op operación a calcular
+     * @return siempre 0.00
+     */
     public BigDecimal calcularTotalAPagarVendedor(Operacion op) {
         return ZERO_MONEY;
     }
 
+    /**
+     * Ejecuta el pipeline completo de cálculo financiero en 3 capas y consolida todos los saldos en un record inmutable.
+     *
+     * @param op operación de hacienda a liquidar
+     * @return resultado consolidado de las 3 capas de liquidación
+     */
     public CalculoResultado calcular(Operacion op) {
         if (op == null) {
             return new CalculoResultado(

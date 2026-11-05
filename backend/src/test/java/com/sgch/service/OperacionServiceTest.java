@@ -24,6 +24,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -42,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -62,6 +65,9 @@ public class OperacionServiceTest {
 
     @Spy
     private OperacionMapper operacionMapper = new OperacionMapper();
+
+    @Captor
+    private ArgumentCaptor<List<CuotaOperacion>> cuotasCaptor;
 
     @InjectMocks
     private OperacionService operacionService;
@@ -226,7 +232,6 @@ public class OperacionServiceTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     void test07_createDirectoSinCuotas_generaNCuotasEnPartesIgualesConDescalceCero_R073() {
         requestBase.setModalidadCircuito(ModalidadCircuito.DIRECTO);
         requestBase.setPlazo("30/60/90");
@@ -246,7 +251,6 @@ public class OperacionServiceTest {
         when(calculadoraFinancieraService.calcularIvaGanado(any(Operacion.class))).thenReturn(new BigDecimal("31.50"));
         when(calculadoraFinancieraService.calcular(any(Operacion.class))).thenReturn(crearCalculoResultadoDummy());
 
-        ArgumentCaptor<List<CuotaOperacion>> cuotasCaptor = ArgumentCaptor.forClass(List.class);
         when(cuotaOperacionRepository.saveAll(cuotasCaptor.capture())).thenAnswer(inv -> inv.getArgument(0));
 
         operacionService.create(requestBase);
@@ -271,7 +275,6 @@ public class OperacionServiceTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     void test08_createConsignatariaExternaSinCuotas_generaCuota1ConIvaYDescalceSiete_R073() {
         requestBase.setModalidadCircuito(ModalidadCircuito.CONSIGNATARIA_EXTERNA);
         requestBase.setConsignatariaExterna("Consignataria Sur S.A.");
@@ -293,7 +296,6 @@ public class OperacionServiceTest {
         when(calculadoraFinancieraService.calcularIvaGanado(any(Operacion.class))).thenReturn(new BigDecimal("31.50"));
         when(calculadoraFinancieraService.calcular(any(Operacion.class))).thenReturn(crearCalculoResultadoDummy());
 
-        ArgumentCaptor<List<CuotaOperacion>> cuotasCaptor = ArgumentCaptor.forClass(List.class);
         when(cuotaOperacionRepository.saveAll(cuotasCaptor.capture())).thenAnswer(inv -> inv.getArgument(0));
 
         operacionService.create(requestBase);
@@ -375,7 +377,6 @@ public class OperacionServiceTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     void test12_createConsignatariaExternaConCuotaExplicitaSinDescalce_aplicaDefaultSiete_R076() {
         requestBase.setModalidadCircuito(ModalidadCircuito.CONSIGNATARIA_EXTERNA);
         requestBase.setConsignatariaExterna("Consignataria Central");
@@ -395,13 +396,12 @@ public class OperacionServiceTest {
             return op;
         });
 
-        ArgumentCaptor<List<CuotaOperacion>> captor = ArgumentCaptor.forClass(List.class);
-        when(cuotaOperacionRepository.saveAll(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
+        when(cuotaOperacionRepository.saveAll(cuotasCaptor.capture())).thenAnswer(inv -> inv.getArgument(0));
         when(calculadoraFinancieraService.calcular(any(Operacion.class))).thenReturn(crearCalculoResultadoDummy());
 
         operacionService.create(requestBase);
 
-        List<CuotaOperacion> guardadas = captor.getValue();
+        List<CuotaOperacion> guardadas = cuotasCaptor.getValue();
         assertThat(guardadas).hasSize(1);
         assertThat(guardadas.get(0).getDiasDescalceVendedor()).isEqualTo(7);
     }
@@ -453,10 +453,41 @@ public class OperacionServiceTest {
         requestBase.setCuotas(List.of(cuotaDefaultCarga, cuotaExplicitaCarga));
 
         when(operacionRepository.save(any(Operacion.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(cuotaOperacionRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(cuotaOperacionRepository.saveAll(cuotasCaptor.capture())).thenAnswer(inv -> inv.getArgument(0));
         when(calculadoraFinancieraService.calcular(any(Operacion.class))).thenReturn(crearCalculoResultadoDummy());
 
         OperacionResponse response = operacionService.create(requestBase);
         assertThat(response).isNotNull();
+    }
+
+    @Test
+    void test13_findAllUsaCuotasDelEntityGraphSinConsultarRepositorioPorCadaOperacion() {
+        Operacion op1 = new Operacion();
+        op1.setId("op-1");
+        op1.setComprador(comprador);
+        op1.setVendedor(vendedor);
+        CuotaOperacion c1 = new CuotaOperacion();
+        c1.setNumeroCuota(1);
+        c1.setMontoCuota(new BigDecimal("100.00"));
+        op1.setCuotas(List.of(c1));
+
+        Operacion op2 = new Operacion();
+        op2.setId("op-2");
+        op2.setComprador(comprador);
+        op2.setVendedor(vendedor);
+        CuotaOperacion c2 = new CuotaOperacion();
+        c2.setNumeroCuota(1);
+        c2.setMontoCuota(new BigDecimal("200.00"));
+        op2.setCuotas(List.of(c2));
+
+        when(operacionRepository.findAll(ArgumentMatchers.<Specification<Operacion>>any())).thenReturn(List.of(op1, op2));
+        when(calculadoraFinancieraService.calcular(any(Operacion.class))).thenReturn(crearCalculoResultadoDummy());
+
+        List<OperacionResponse> responses = operacionService.findAll(null, null, null, null, null);
+
+        assertThat(responses).hasSize(2);
+        assertThat(responses.get(0).cuotas()).hasSize(1);
+        assertThat(responses.get(1).cuotas()).hasSize(1);
+        verify(cuotaOperacionRepository, never()).findByOperacionIdOrderByNumeroCuotaAsc(any());
     }
 }

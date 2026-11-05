@@ -2,6 +2,8 @@ package com.sgch.repository;
 
 import com.sgch.model.*;
 import jakarta.persistence.EntityManager;
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,11 +13,13 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.jpa.domain.Specification;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -295,6 +299,65 @@ public class OperacionRepositoryTest {
         assertThrows(DataIntegrityViolationException.class, () -> {
             operacionRepository.saveAndFlush(opSinComprador);
         });
+    }
+
+    @Test
+    void testFindAllWithSpecificationExecutesSingleQueryFor100OperacionesUnder500ms() {
+        for (int i = 1; i <= 100; i++) {
+            Operacion op = createMinOperacion(comprador, vendedor, LocalDateTime.of(2026, 11, 1, 10, 0).minusHours(i));
+            entityManager.persist(op);
+
+            CuotaOperacion c1 = new CuotaOperacion();
+            c1.setOperacion(op);
+            c1.setNumeroCuota(1);
+            c1.setFechaBasePlazo(FechaBasePlazo.CARGA);
+            c1.setDiasPlazoComprador(30);
+            c1.setDiasDescalceVendedor(0);
+            c1.setFechaVencimientoComprador(LocalDate.of(2026, 12, 1));
+            c1.setFechaVencimientoVendedor(LocalDate.of(2026, 12, 1));
+            c1.setMontoCuota(new BigDecimal("500000.00"));
+            c1.setEstadoCobro(EstadoCuotaCobro.PENDIENTE);
+            c1.setEstadoPago(EstadoCuotaPago.PENDIENTE);
+            entityManager.persist(c1);
+
+            CuotaOperacion c2 = new CuotaOperacion();
+            c2.setOperacion(op);
+            c2.setNumeroCuota(2);
+            c2.setFechaBasePlazo(FechaBasePlazo.CARGA);
+            c2.setDiasPlazoComprador(60);
+            c2.setDiasDescalceVendedor(0);
+            c2.setFechaVencimientoComprador(LocalDate.of(2027, 1, 1));
+            c2.setFechaVencimientoVendedor(LocalDate.of(2027, 1, 1));
+            c2.setMontoCuota(new BigDecimal("500000.00"));
+            c2.setEstadoCobro(EstadoCuotaCobro.PENDIENTE);
+            c2.setEstadoPago(EstadoCuotaPago.PENDIENTE);
+            entityManager.persist(c2);
+        }
+
+        entityManager.flush();
+        entityManager.clear();
+
+        SessionFactory sf = entityManager.getEntityManagerFactory().unwrap(SessionFactory.class);
+        Statistics stats = sf.getStatistics();
+        stats.setStatisticsEnabled(true);
+        stats.clear();
+
+        long start = System.nanoTime();
+        Specification<Operacion> spec = (root, query, cb) -> cb.conjunction();
+        List<Operacion> operaciones = operacionRepository.findAll(spec);
+
+        for (Operacion op : operaciones) {
+            assertThat(op.getComprador().getNombreRazonSocial()).isNotNull();
+            assertThat(op.getVendedor().getNombreRazonSocial()).isNotNull();
+            assertThat(op.getCuotas()).hasSize(2);
+            assertThat(op.getCuotas().get(0).getNumeroCuota()).isEqualTo(1);
+            assertThat(op.getCuotas().get(1).getNumeroCuota()).isEqualTo(2);
+        }
+        long elapsedMs = (System.nanoTime() - start) / 1_000_000L;
+
+        assertThat(operaciones).hasSize(100);
+        assertThat(stats.getPrepareStatementCount()).isEqualTo(1L);
+        assertThat(elapsedMs).isLessThan(500L);
     }
 
     private Operacion createMinOperacion(Cliente comp, Cliente vend, LocalDateTime fechaOp) {

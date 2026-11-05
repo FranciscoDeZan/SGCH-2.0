@@ -45,6 +45,13 @@ public class OperacionService {
     private final CalculadoraFinancieraService calculadoraFinancieraService;
     private final OperacionMapper operacionMapper;
 
+    /**
+     * Crea una nueva operación de intermediación o compraventa de hacienda con sus cuotas
+     * de cobro/pago asociadas y cálculo financiero en 3 capas.
+     *
+     * @param request datos de la operación y cuotas a crear
+     * @return representación completa de la operación persistida con saldos calculados
+     */
     public OperacionResponse create(OperacionRequest request) {
         Cliente comprador = clienteRepository.findById(request.getCompradorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Comprador no encontrado con id: " + request.getCompradorId()));
@@ -79,6 +86,17 @@ public class OperacionService {
         return operacionMapper.toResponse(savedOperacion, cuotasPersistidas, calculo);
     }
 
+    /**
+     * Busca y filtra operaciones según criterios opcionales (circuito, cliente, estado, fechas),
+     * inicializando comprador, vendedor y cuotas en una única consulta SQL mediante EntityGraph.
+     *
+     * @param circuito modalidad de circuito (DIRECTO, CONSIGNATARIA_EXTERNA, PROPIA)
+     * @param clienteId identificador del cliente participante como comprador o vendedor
+     * @param estado estado de liquidación de la operación
+     * @param fechaDesde fecha inicial de filtro inclusiva
+     * @param fechaHasta fecha final de filtro inclusiva
+     * @return lista de operaciones encontradas con sus saldos y cuotas
+     */
     @Transactional(readOnly = true)
     public List<OperacionResponse> findAll(
             ModalidadCircuito circuito,
@@ -112,13 +130,20 @@ public class OperacionService {
 
         return operacionRepository.findAll(spec).stream()
                 .map(op -> {
-                    List<CuotaOperacion> cuotas = cuotaOperacionRepository.findByOperacionIdOrderByNumeroCuotaAsc(op.getId());
+                    List<CuotaOperacion> cuotas = op.getCuotas() != null ? op.getCuotas() : List.of();
                     CalculoResultado calculo = calculadoraFinancieraService.calcular(op);
                     return operacionMapper.toResponse(op, cuotas, calculo);
                 })
                 .toList();
     }
 
+    /**
+     * Obtiene una operación por su identificador único con sus cuotas y cálculo financiero.
+     *
+     * @param id identificador único de la operación
+     * @return detalle completo de la operación
+     * @throws ResourceNotFoundException si la operación no existe
+     */
     @Transactional(readOnly = true)
     public OperacionResponse findById(String id) {
         Operacion op = operacionRepository.findById(id)
@@ -128,6 +153,14 @@ public class OperacionService {
         return operacionMapper.toResponse(op, cuotas, calculo);
     }
 
+    /**
+     * Actualiza los datos de una operación existente, sus cuotas asociadas y recalcula saldos.
+     *
+     * @param id identificador de la operación a modificar
+     * @param request nuevos valores de la operación
+     * @return operación actualizada con sus saldos recalculados
+     * @throws ResourceNotFoundException si la operación o los clientes no existen
+     */
     public OperacionResponse update(String id, OperacionRequest request) {
         Operacion op = operacionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Operacion no encontrada con id: " + id));

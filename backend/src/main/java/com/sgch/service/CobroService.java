@@ -36,6 +36,15 @@ public class CobroService {
     private final CalculadoraFinancieraService calculadoraFinancieraService;
     private final CobroMapper cobroMapper;
 
+    /**
+     * Registra un nuevo movimiento de cobro o pago asociado a una operación o cuota,
+     * actualizando los estados de cobro/pago de la cuota y de liquidación de la operación.
+     *
+     * @param request datos del cobro o pago a registrar
+     * @return respuesta con los datos del cobro persistido
+     * @throws ResourceNotFoundException si la operación, cliente o cuota no existen
+     * @throws IllegalArgumentException si la cuota no pertenece a la operación indicada
+     */
     public CobroResponse create(CobroRequest request) {
         Operacion operacion = operacionRepository.findById(request.getOperacionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Operacion no encontrada con id: " + request.getOperacionId()));
@@ -66,6 +75,12 @@ public class CobroService {
         return cobroMapper.toResponse(savedCobro);
     }
 
+    /**
+     * Obtiene la lista ordenada cronológicamente de cobros y pagos imputados a una operación.
+     *
+     * @param operacionId identificador único de la operación
+     * @return lista de movimientos de cobro/pago registrados
+     */
     @Transactional(readOnly = true)
     public List<CobroResponse> findByOperacionId(String operacionId) {
         return cobroRepository.findByOperacionIdOrderByFechaMovimientoAsc(operacionId).stream()
@@ -73,6 +88,13 @@ public class CobroService {
                 .toList();
     }
 
+    /**
+     * Obtiene el detalle de un movimiento de cobro o pago por su identificador único.
+     *
+     * @param id identificador único del cobro
+     * @return detalle del movimiento de cobro/pago
+     * @throws ResourceNotFoundException si el cobro no existe
+     */
     @Transactional(readOnly = true)
     public CobroResponse findById(String id) {
         Cobro cobro = cobroRepository.findById(id)
